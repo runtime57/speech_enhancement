@@ -1,0 +1,40 @@
+# src/configs/model/deepfilternet.yaml
+_target_: src.model.DfNet
+
+# верхнеуровневые флаги и состояние
+run_df: true
+train_mask: true
+df_state: null
+
+# параметры модели/DF (все дефолты)
+sr: 16000
+fft_size: 960
+hop_size: 480
+nb_erb: 32
+nb_df: 96
+norm_tau: 1.0
+lsnr_max: 35
+lsnr_min: -15
+min_nb_freqs: 2
+df_order: 5
+df_lookahead: 0
+pad_mode: input
+
+# ModelParams
+conv_lookahead: 0
+conv_k_enc: 2
+conv_k_dec: 1
+conv_ch: 16
+conv_width_f: 1
+conv_dec_mode: transposed
+conv_depthwise: true
+convt_depthwise: true
+emb_hidden_dim: 256
+emb_num_layers: 1
+df_hidden_dim: 256
+df_num_layers: 3
+gru_groups: 1
+lin_groups: 1
+group_shuffle: true
+dfop_method: real_unfold
+mask_pf: false
