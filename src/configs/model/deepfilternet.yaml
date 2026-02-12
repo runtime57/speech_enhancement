@@ -7,18 +7,6 @@ train_mask: true
 df_state: null
 
 # параметры модели/DF (все дефолты)
-sr: 16000
-fft_size: 960
-hop_size: 480
-nb_erb: 32
-nb_df: 96
-norm_tau: 1.0
-lsnr_max: 35
-lsnr_min: -15
-min_nb_freqs: 2
-df_order: 5
-df_lookahead: 0
-pad_mode: input
 
 # ModelParams
 conv_lookahead: 0

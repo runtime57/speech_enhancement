@@ -12,6 +12,8 @@ from torch import Tensor
 from torch.autograd import Function
 from torch.types import Number
 
+from utils.config_utils import stft_config
+
 
 def as_complex(x: Tensor):
     if torch.is_complex(x):
@@ -93,7 +95,7 @@ def make_np(x: Union[Tensor, np.ndarray, Number]) -> np.ndarray:
 
 
 def get_norm_alpha(log: bool = True) -> float:
-    p = ModelParams()
+    p = stft_config()
     a_ = _calculate_norm_alpha(sr=p.sr, hop_size=p.hop_size, tau=p.norm_tau)
     precision = 3
     a = 1.0
@@ -102,6 +104,43 @@ def get_norm_alpha(log: bool = True) -> float:
         precision += 1
     print(f"Running with normalization window alpha = '{a}'")
     return a
+
+
+def exp_unit_norm(
+    x: Tensor,
+    lengths: Optional[Tensor] = None,  # [B] в фреймах, если есть паддинг
+) -> Tuple[Tensor, Tensor]:
+    assert x.dim() == 5 and x.size(-1) == 2
+    B, C, T, F, _ = x.shape
+    device, dtype = x.device, x.dtype
+
+    alpha = get_norm_alpha()
+    eps = 1e-8
+    state = torch.ones((B, C, F), device=device, dtype=dtype)
+    
+    y = x.clone()
+
+    if lengths is not None:
+        valid_t = (torch.arange(T, device=device)[None, :] < lengths[:, None])  # [B,T]
+    else:
+        valid_t = None
+
+    for t in range(T):
+        re = y[:, :, t, :, 0]                # [B,C,F]
+        im = y[:, :, t, :, 1]
+        mag2 = re * re + im * im             # |X|^2
+
+        if valid_t is None:
+            state = alpha * state + (1 - alpha) * mag2
+        else:
+            v = valid_t[:, t].view(B, 1, 1)  # [B,1,1]
+            state = torch.where(v, alpha * state + (1 - alpha) * mag2, state)
+
+        inv = torch.rsqrt(state + eps)
+        y[:, :, t, :, 0] = re * inv
+        y[:, :, t, :, 1] = im * inv
+
+    return y, state
 
 
 def _calculate_norm_alpha(sr: int, hop_size: int, tau: float):

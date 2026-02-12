@@ -8,10 +8,14 @@ import torch
 from tqdm.auto import tqdm
 import torchaudio
 import safetensors
+from omegaconf import OmegaConf
+
+from utils.config_utils import get_config, stft_config
 
 from src.datasets.base_dataset import BaseDataset
 from src.utils.io_utils import ROOT_PATH, read_json, write_json
 from src.utils.vctk_utils import create_vctk_split
+from src.utils.config_utils import get_config
 
 class VCTKDataset(BaseDataset):
     """
@@ -54,20 +58,22 @@ class VCTKDataset(BaseDataset):
 
         split = read_json(ROOT_PATH / "data" / "vctk" / name / "split.json")
         number_of_zeros = 8
+        
+        p = stft_config()
 
         print("Creating Example Dataset")
         for i, (noisy_path, clean_path) in tqdm(enumerate(split)):
             path = data_path / f"{i:0{number_of_zeros}d}.pt"
 
-            clean_stft = self.safe_torchaudio_load(clean_path, sr)
-            noisy_stft = self.safe_torchaudio_load(noisy_path, sr)
+            clean, _ = self.safe_torchaudio_load(clean_path, sr)
+            noisy, _ = self.safe_torchaudio_load(noisy_path, sr)
 
             safetensors.torch.save_file({
-                "clean_stft": clean_stft,
-                "noisy_stft": noisy_stft
+                "clean": clean,
+                "noisy": noisy
             }, path)
 
-            index.append({
+            index.append({ 
                 "element_path": str(path), 
                 "original_clean": clean_path, 
                 "original_noisy": noisy_path
@@ -82,8 +88,8 @@ class VCTKDataset(BaseDataset):
         data_path = data_dict["element_path"]
         obj = safetensors.torch.load_file(data_path)
 
-        noisy = obj["noisy_stft"]
-        clean = obj["clean_stft"]
+        noisy = obj["noisy"]
+        clean = obj["clean"]
         noisy = self.preprocess_data(noisy)
         return {"noisy": noisy, "clean": clean}
 
@@ -106,9 +112,7 @@ class VCTKDataset(BaseDataset):
             )
             sr = target_sr
 
-        # waveform = waveform.clamp(-1.0, 1.0)
-
         if mono:
             waveform = waveform.squeeze(0)  # [T]
-        return waveform, sr
+        return waveform.contiguous(), sr
         

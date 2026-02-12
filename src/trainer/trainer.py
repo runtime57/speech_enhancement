@@ -1,6 +1,12 @@
+import torch
 from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
 
+from src.model.modules import erb_filterbank
+
+from utils.config_utils import stft_config
+from utils.df_utils import exp_unit_norm
+from utils.erb_utils import compute_erb_feats_from_stft
 
 class Trainer(BaseTrainer):
     """
@@ -34,8 +40,23 @@ class Trainer(BaseTrainer):
             metric_funcs = self.metrics["train"]
             self.optimizer.zero_grad()
 
-        outputs = self.model(**batch)
-        batch.update(outputs)
+        p = stft_config()
+        clean_stft = torch.stft(batch['clean'], n_fft=p.n_fft, hop_length=p.hop_length, return_complex=False)
+        noisy_stft = torch.stft(batch['noisy'], n_fft=p.n_fft, hop_length=p.hop_length, return_complex=False)
+
+        feat_erb = compute_erb_feats_from_stft(noisy_stft)
+
+        feat_spec = noisy_stft[:, :p.nb_df, :, :]
+        feat_spec, _ = exp_unit_norm(feat_spec)
+
+
+        enh, m, lsnr, other = self.model(
+            spec = noisy_stft,
+            feat_erb=feat_erb,
+            feat_spec=feat_spec
+        )
+
+        batch.update({"enh": enh, "m": m, "lsnr": lsnr})
 
         all_losses = self.criterion(**batch)
         batch.update(all_losses)

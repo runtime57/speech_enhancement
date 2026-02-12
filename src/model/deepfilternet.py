@@ -3,8 +3,8 @@ from typing import Optional, Tuple
 import torch
 from torch import Tensor, nn
 
-from modules import DfOp, GroupedGRU, GroupedLinear, Mask, convkxf, erb_fb
-
+from modules import DfOp, GroupedGRU, GroupedLinear, Mask, convkxf, erb_filterbank
+from utils.config_utils import stft_config
 
 class Encoder(nn.Module):
     def __init__(self, params):
@@ -169,21 +169,8 @@ class DfDecoder(nn.Module):
 class DfNet(nn.Module):
     def __init__(
         self,
-        df_state: Optional[DF] = None,
         run_df: bool = True,
         train_mask: bool = True,
-        sr: int = 48_000,
-        fft_size: int = 960,
-        hop_size: int = 480,
-        nb_erb: int = 32,
-        nb_df: int = 96,
-        norm_tau: float = 1.0,
-        lsnr_max: int = 35,
-        lsnr_min: int = -15,
-        min_nb_freqs: int = 2,
-        df_order: int = 5,
-        df_lookahead: int = 0,
-        pad_mode: str = "input",
         conv_lookahead: int = 0,
         conv_k_enc: int = 2,
         conv_k_dec: int = 1,
@@ -203,18 +190,22 @@ class DfNet(nn.Module):
         mask_pf: bool = False,
     ):
         super().__init__()
-        self.sr = sr
-        self.fft_size = fft_size
-        self.hop_size = hop_size
-        self.nb_erb = nb_erb
-        self.nb_df = nb_df
-        self.norm_tau = norm_tau
-        self.lsnr_max = lsnr_max
-        self.lsnr_min = lsnr_min
-        self.min_nb_freqs = min_nb_freqs
-        self.df_order = df_order
-        self.df_lookahead = df_lookahead
-        self.pad_mode = pad_mode
+
+        p = stft_config()
+
+        self.sr = p.sr
+        self.fft_size = p.fft_size
+        self.hop_size = p.hop_size
+        self.nb_erb = p.nb_erb
+        self.nb_df = p.nb_df
+        self.norm_tau = p.norm_tau
+        self.lsnr_max = p.lsnr_max
+        self.lsnr_min = p.lsnr_min
+        self.min_nb_freqs = p.min_nb_freqs
+        self.df_order = p.df_order
+        self.df_lookahead = p.df_lookahead
+        self.pad_mode = p.pad_mode
+
         self.conv_lookahead = conv_lookahead
         self.conv_k_enc = conv_k_enc
         self.conv_k_dec = conv_k_dec
@@ -237,14 +228,13 @@ class DfNet(nn.Module):
 
         layer_width = self.conv_ch
         assert self.nb_erb % 8 == 0, "erb_bins should be divisible by 8"
-        if df_state is None:
-            df_state = DF(
-                sr=self.sr,
-                fft_size=self.fft_size,
-                hop_size=self.hop_size,
-                nb_bands=self.nb_erb,
-            )
-        erb_inverse = erb_fb(df_state.erb_widths(), self.sr, inverse=True)
+        erb_inverse = erb_filterbank(
+            self.sr,
+            self.fft_size,
+            self.nb_erb,
+            inverse=True,
+            min_nb_freqs=self.min_nb_freqs,
+        )
         self.freq_bins = self.fft_size // 2 + 1
         self.emb_dim = layer_width * self.nb_erb
         self.erb_bins = self.nb_erb

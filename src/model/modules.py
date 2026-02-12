@@ -12,10 +12,11 @@ from torch.nn import init
 from torch.nn.parameter import Parameter
 from typing_extensions import Final
 
-from df.model import ModelParams
-from df.utils import as_complex, as_real, get_device, get_norm_alpha
-from libdf import unit_norm_init
+from utils.config_utils import stft_config
 
+from utils.df_utils import as_complex, as_real, get_device, get_norm_alpha
+from libdf import unit_norm_init
+from utils.erb_utils import erb_widths
 
 class Conv2dNormAct(nn.Sequential):
     def __init__(
@@ -205,7 +206,7 @@ class FreqUpsample(nn.Module):
         return F.interpolate(x, scale_factor=[1.0, self.f], mode=self.mode)
 
 
-def erb_fb(widths: np.ndarray, sr: int, normalized: bool = True, inverse: bool = False) -> Tensor:
+def _erb_fb(widths: np.ndarray, sr: int, normalized: bool = True, inverse: bool = False) -> Tensor:
     n_freqs = int(np.sum(widths))
     all_freqs = torch.linspace(0, sr // 2, n_freqs + 1)[:-1]
 
@@ -222,7 +223,25 @@ def erb_fb(widths: np.ndarray, sr: int, normalized: bool = True, inverse: bool =
     else:
         if normalized:
             fb /= fb.sum(dim=0)
-    return fb.to(device=get_device())
+    return fb
+
+def erb_filterbank(
+    normalized: bool = True,
+    inverse: bool = False,
+) -> Tensor:
+    """
+    Build a rectangular ERB filter bank.
+
+    Returns a matrix of shape:
+      - [F, B] when inverse=False
+      - [B, F] when inverse=True
+    where F = fft_size // 2 + 1 and B = nb_erb.
+    """
+    p = stft_config()
+    widths = erb_widths(p.sr, p.fft_size, p.nb_erb, min_nb_freqs=p.min_nb_freqs)
+    return _erb_fb(widths, p.sr, normalized=normalized, inverse=inverse)
+
+
 
 
 class Mask(nn.Module):
@@ -827,7 +846,7 @@ class LocalSnrTarget(nn.Module):
 
     def calc_ws(self, ws_ms: int) -> int:
         # Calculates windows size in stft domain given a window size in ms
-        p = ModelParams()
+        p = stft_config()
         ws = ws_ms - p.fft_size / p.sr * 1000  # length ms of an fft_window
         ws = 1 + ws / (p.hop_size / p.sr * 1000)  # consider hop_size
         return max(int(round(ws)), 1)

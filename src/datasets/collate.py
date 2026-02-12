@@ -1,5 +1,5 @@
 import torch
-
+from torch.nn.utils.rnn import pad_sequence
 
 def collate_fn(dataset_items: list[dict]):
     """
@@ -13,13 +13,16 @@ def collate_fn(dataset_items: list[dict]):
         result_batch (dict[Tensor]): dict, containing batch-version
             of the tensors.
     """
+    noisy = [elem['noisy'] for elem in dataset_items]
+    clean = [elem['clean'] for elem in dataset_items]
 
-    result_batch = {}
+    lengths = torch.tensor([x.shape[0] for x in noisy], dtype=torch.long)  # T_i
+    T_max = int(lengths.max())
 
-    # example of collate_fn
-    result_batch["data_object"] = torch.vstack(
-        [elem["data_object"] for elem in dataset_items]
-    )
-    result_batch["labels"] = torch.tensor([elem["labels"] for elem in dataset_items])
+    noisy = pad_sequence(noisy, batch_first=True, padding_value=0.0)
+    clean = pad_sequence(clean, batch_first=True, padding_value=0.0)
 
-    return result_batch
+    return {
+        "noisy": noisy,
+        "clean": clean,
+    }
