@@ -1,11 +1,9 @@
 import torch
+
 from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
-
-from src.model.modules import erb_filterbank
-
 from utils.config_utils import stft_config
-from utils.df_utils import exp_unit_norm
+from utils.df_utils import as_complex, exp_unit_norm
 from utils.erb_utils import compute_erb_feats_from_stft
 
 class Trainer(BaseTrainer):
@@ -41,24 +39,80 @@ class Trainer(BaseTrainer):
             self.optimizer.zero_grad()
 
         p = stft_config()
-        clean_stft = torch.stft(batch['clean'], n_fft=p.n_fft, hop_length=p.hop_length, return_complex=False)
-        noisy_stft = torch.stft(batch['noisy'], n_fft=p.n_fft, hop_length=p.hop_length, return_complex=False)
+        clean_stft = torch.stft(
+            batch["clean"],
+            n_fft=p.fft_size,
+            hop_length=p.hop_size,
+            return_complex=False,
+        )  # [B, F, T, 2]
+        noisy_stft = torch.stft(
+            batch["noisy"],
+            n_fft=p.fft_size,
+            hop_length=p.hop_size,
+            return_complex=False,
+        )  # [B, F, T, 2]
+
+        # reshape to model convention [B, 1, T, F, 2]
+        def to_spec(x):
+            return x.unsqueeze(1).permute(0, 1, 3, 2, 4).contiguous()
+
+        clean_spec = to_spec(clean_stft)
+        noisy_spec = to_spec(noisy_stft)
 
         feat_erb = compute_erb_feats_from_stft(noisy_stft)
 
-        feat_spec = noisy_stft[:, :p.nb_df, :, :]
+        feat_spec = noisy_spec[:, :, :, : p.nb_df, :]
         feat_spec, _ = exp_unit_norm(feat_spec)
 
 
-        enh, m, lsnr, other = self.model(
-            spec = noisy_stft,
+        enh, m, lsnr, _ = self.model(
+            spec=noisy_spec,
             feat_erb=feat_erb,
-            feat_spec=feat_spec
+            feat_spec=feat_spec,
         )
 
-        batch.update({"enh": enh, "m": m, "lsnr": lsnr})
+        batch.update(
+            {
+                "clean_spec": clean_spec,
+                "noisy_spec": noisy_spec,
+                "enh": enh,
+                "m": m,
+                "lsnr": lsnr,
+            }
+        )
 
-        all_losses = self.criterion(**batch)
+        # Convert enhanced STFT back to waveform for waveform-based metrics/losses.
+        # enh: [B, 1, T, F, 2] -> istft expects [B, F, T] complex
+        def spec_to_waveform(spec: torch.Tensor, length: int) -> torch.Tensor:
+            spec = spec.squeeze(1).permute(0, 2, 1, 3).contiguous()  # [B, F, T, 2]
+            return torch.istft(
+                as_complex(spec),
+                n_fft=p.fft_size,
+                hop_length=p.hop_size,
+                length=length,
+            )
+
+        loss_on_waveform = bool(self.cfg_trainer.get("loss_on_waveform", False))
+        enh_wav = spec_to_waveform(
+            enh if loss_on_waveform else enh.detach(),
+            length=batch["noisy"].shape[-1],
+        )
+        batch.update(
+            {
+                "enh_wav": enh_wav,
+                "separated_audio": enh_wav,
+                "audio_target": batch["clean"],
+                "audio_mix": batch["noisy"],
+            }
+        )
+
+        all_losses = self.criterion(
+            clean=clean_spec,
+            noisy=noisy_spec,
+            enh=enh,
+            m=m,
+            lsnr=lsnr,
+        )
         batch.update(all_losses)
 
         if self.is_train:
