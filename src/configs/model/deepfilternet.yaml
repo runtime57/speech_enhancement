@@ -4,7 +4,6 @@ _target_: src.model.DfNet
 # верхнеуровневые флаги и состояние
 run_df: true
 train_mask: true
-df_state: null
 
 # параметры модели/DF (все дефолты)
 

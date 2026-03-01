@@ -8,7 +8,7 @@ import numpy as np
 
 import torch
 
-from utils.config_utils import stft_config
+from src.utils.config_utils import stft_config
 
 def _freq2erb(freq_hz: np.float32) -> np.float32:
     """Mirrors `freq2erb()` in `libDF/src/lib.rs` (uses f32 math in Rust)."""

@@ -12,11 +12,11 @@ from torch.nn import init
 from torch.nn.parameter import Parameter
 from typing_extensions import Final
 
-from utils.config_utils import stft_config
+from src.utils.config_utils import stft_config
 
-from utils.df_utils import as_complex, as_real, get_device, get_norm_alpha
+from src.utils.df_utils import as_complex, as_real, get_norm_alpha
 from libdf import unit_norm_init
-from utils.erb_utils import erb_widths
+from src.utils.erb_utils import erb_widths
 
 class Conv2dNormAct(nn.Sequential):
     def __init__(

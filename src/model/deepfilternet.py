@@ -3,8 +3,8 @@ from typing import Optional, Tuple
 import torch
 from torch import Tensor, nn
 
-from modules import DfOp, GroupedGRU, GroupedLinear, Mask, convkxf, erb_filterbank
-from utils.config_utils import stft_config
+from src.model.modules import DfOp, GroupedGRU, GroupedLinear, Mask, convkxf, erb_filterbank
+from src.utils.config_utils import stft_config
 
 class Encoder(nn.Module):
     def __init__(self, params):

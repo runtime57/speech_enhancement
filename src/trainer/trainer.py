@@ -2,9 +2,9 @@ import torch
 
 from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
-from utils.config_utils import stft_config
-from utils.df_utils import as_complex, exp_unit_norm
-from utils.erb_utils import compute_erb_feats_from_stft
+from src.utils.config_utils import stft_config
+from src.utils.df_utils import as_complex, exp_unit_norm
+from src.utils.erb_utils import compute_erb_feats_from_stft
 
 class Trainer(BaseTrainer):
     """

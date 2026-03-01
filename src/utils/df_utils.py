@@ -12,7 +12,7 @@ from torch import Tensor
 from torch.autograd import Function
 from torch.types import Number
 
-from utils.config_utils import stft_config
+from src.utils.config_utils import stft_config
 
 
 def as_complex(x: Tensor):

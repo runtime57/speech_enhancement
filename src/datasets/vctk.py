@@ -8,13 +8,14 @@ import torch
 from tqdm.auto import tqdm
 import torchaudio
 import safetensors
+import safetensors.torch
 from omegaconf import OmegaConf
 
-from utils.config_utils import get_config, stft_config
+from src.utils.config_utils import get_config, stft_config
 
 from src.datasets.base_dataset import BaseDataset
 from src.utils.io_utils import ROOT_PATH, read_json, write_json
-from src.utils.vctk_utils import create_vctk_split
+# from src.utils.vctk_utils import create_vctk_split
 from src.utils.config_utils import get_config
 
 class VCTKDataset(BaseDataset):
@@ -54,16 +55,18 @@ class VCTKDataset(BaseDataset):
         data_path = ROOT_PATH / "data" / "vctk" / name
         data_path.mkdir(exist_ok=True, parents=True)
         
-        create_vctk_split(name)
+        # create_vctk_split(name)
 
         split = read_json(ROOT_PATH / "data" / "vctk" / name / "split.json")
         number_of_zeros = 8
         
         p = stft_config()
 
-        print("Creating Example Dataset")
-        for i, (noisy_path, clean_path) in tqdm(enumerate(split)):
+        print("Creating VCTK Dataset")
+        for i, element in tqdm(enumerate(split)):
             path = data_path / f"{i:0{number_of_zeros}d}.pt"
+
+            clean_path, noisy_path = element["clean_path"], element["noisy_path"]
 
             clean, _ = self.safe_torchaudio_load(clean_path, sr)
             noisy, _ = self.safe_torchaudio_load(noisy_path, sr)
