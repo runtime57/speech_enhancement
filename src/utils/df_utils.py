@@ -96,13 +96,12 @@ def make_np(x: Union[Tensor, np.ndarray, Number]) -> np.ndarray:
 
 def get_norm_alpha(log: bool = True) -> float:
     p = stft_config()
-    a_ = _calculate_norm_alpha(sr=p.sr, hop_size=p.hop_size, tau=p.norm_tau)
+    a_ = _calculate_norm_alpha(sr=p.sr, hop_length=p.hop_length, tau=p.norm_tau)
     precision = 3
     a = 1.0
     while a >= 1.0:
         a = round(a_, precision)
         precision += 1
-    print(f"Running with normalization window alpha = '{a}'")
     return a
 
 
@@ -143,9 +142,9 @@ def exp_unit_norm(
     return y, state
 
 
-def _calculate_norm_alpha(sr: int, hop_size: int, tau: float):
+def _calculate_norm_alpha(sr: int, hop_length: int, tau: float):
     """Exponential decay factor alpha for a given tau (decay window size [s])."""
-    dt = hop_size / sr
+    dt = hop_length / sr
     return math.exp(-dt / tau)
 
 

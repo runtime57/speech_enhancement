@@ -702,7 +702,7 @@ class Loss(nn.Module):
         p = stft_config()
         self.sr = int(p.sr)
         self.fft_size = int(p.fft_size)
-        self.hop_size = int(p.hop_size)
+        self.hop_length = int(p.hop_length)
         self.freq_bins = self.fft_size // 2 + 1
         self.store_losses = bool(store_losses)
 
@@ -828,7 +828,7 @@ class Loss(nn.Module):
             or self.asrl is not None
         )
         if need_td and self.istft is None:
-            self.istft = Istft(self.fft_size, self.hop_size, self._stft_window)
+            self.istft = Istft(self.fft_size, self.hop_length, self._stft_window)
 
     def reset_summaries(self) -> Dict[str, List[Tensor]]:
         return defaultdict(list)
@@ -846,7 +846,7 @@ class Loss(nn.Module):
         out = torch.stft(
             x.reshape(-1, t),
             n_fft=self.fft_size,
-            hop_length=self.hop_size,
+            hop_length=self.hop_length,
             window=window,
             normalized=True,
             return_complex=True,

@@ -18,7 +18,7 @@ loss_function:
 trainer:
   log_step: 50
   n_epochs: 100
-  epoch_len: 1
+  epoch_len: 100
   device_tensors: ["noisy", "clean"] # which tensors should be on device (ex. GPU)
   resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
   device: auto # device name or "auto"
@@ -31,7 +31,7 @@ trainer:
 stft:
   sr: 16000
   fft_size: 320
-  hop_size: 160
+  hop_length: 160
   nb_erb: 24
   nb_df: 96
   norm_tau: 1

@@ -195,7 +195,7 @@ class DfNet(nn.Module):
 
         self.sr = p.sr
         self.fft_size = p.fft_size
-        self.hop_size = p.hop_size
+        self.hop_length = p.hop_length
         self.nb_erb = p.nb_erb
         self.nb_df = p.nb_df
         self.norm_tau = p.norm_tau
@@ -229,11 +229,7 @@ class DfNet(nn.Module):
         layer_width = self.conv_ch
         assert self.nb_erb % 8 == 0, "erb_bins should be divisible by 8"
         erb_inverse = erb_filterbank(
-            self.sr,
-            self.fft_size,
-            self.nb_erb,
-            inverse=True,
-            min_nb_freqs=self.min_nb_freqs,
+            inverse=True
         )
         self.freq_bins = self.fft_size // 2 + 1
         self.emb_dim = layer_width * self.nb_erb

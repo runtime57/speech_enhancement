@@ -42,13 +42,13 @@ class Trainer(BaseTrainer):
         clean_stft = torch.stft(
             batch["clean"],
             n_fft=p.fft_size,
-            hop_length=p.hop_size,
+            hop_length=p.hop_length,
             return_complex=False,
         )  # [B, F, T, 2]
         noisy_stft = torch.stft(
             batch["noisy"],
             n_fft=p.fft_size,
-            hop_length=p.hop_size,
+            hop_length=p.hop_length,
             return_complex=False,
         )  # [B, F, T, 2]
 
@@ -88,7 +88,7 @@ class Trainer(BaseTrainer):
             return torch.istft(
                 as_complex(spec),
                 n_fft=p.fft_size,
-                hop_length=p.hop_size,
+                hop_length=p.hop_length,
                 length=length,
             )
 

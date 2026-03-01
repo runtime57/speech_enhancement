@@ -848,7 +848,7 @@ class LocalSnrTarget(nn.Module):
         # Calculates windows size in stft domain given a window size in ms
         p = stft_config()
         ws = ws_ms - p.fft_size / p.sr * 1000  # length ms of an fft_window
-        ws = 1 + ws / (p.hop_size / p.sr * 1000)  # consider hop_size
+        ws = 1 + ws / (p.hop_length / p.sr * 1000)  # consider hop_length
         return max(int(round(ws)), 1)
 
     def forward(self, clean: Tensor, noise: Tensor, max_bin: Optional[int] = None) -> Tensor:
@@ -936,7 +936,7 @@ def test_erb():
     config.use_defaults()
     p = ModelParams()
     n_freq = p.fft_size // 2 + 1
-    df_state = libdf.DF(sr=p.sr, fft_size=p.fft_size, hop_size=p.hop_size, nb_bands=p.nb_erb)
+    df_state = libdf.DF(sr=p.sr, fft_size=p.fft_size, hop_length=p.hop_length, nb_bands=p.nb_erb)
     erb = erb_fb(df_state.erb_widths(), p.sr)
     erb_inverse = erb_fb(df_state.erb_widths(), p.sr, inverse=True)
     input = torch.randn((1, 1, 1, n_freq), dtype=torch.complex64)

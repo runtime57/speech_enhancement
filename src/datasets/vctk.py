@@ -87,7 +87,7 @@ class VCTKDataset(BaseDataset):
 
 
     def __getitem__(self, ind):
-        data_dict = self.index[ind]
+        data_dict = self._index[ind]
         data_path = data_dict["element_path"]
         obj = safetensors.torch.load_file(data_path)
 

@@ -6,3 +6,10 @@ train:
   - _target_: src.metrics.PESQ
     device: ${metrics.device}
     name: "PESQ"
+inference:
+  - _target_: src.metrics.STOI
+    device: ${metrics.device}
+    name: "STOI"
+  - _target_: src.metrics.PESQ
+    device: ${metrics.device}
+    name: "PESQ"

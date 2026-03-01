@@ -31,7 +31,7 @@ trainer:
 stft:
   sr: 16000
   fft_size: 320
-  hop_size: 160
+  hop_length: 160
   nb_erb: 24
   nb_df: 96
   norm_tau: 1
