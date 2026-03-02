@@ -19,7 +19,7 @@ def create_vctk_split(split_name, rawdata_path, dataset_path):
     dataset_path = Path(dataset_path)
 
     if split_name == "train":
-        ending = f"{split_name}set_spk28_wav"
+        ending = f"{split_name}set_28spk_wav"
     else:
         ending = f"{split_name}set_wav"
     clean_paths = get_wav_paths(rawdata_path / f"clean_{ending}")
