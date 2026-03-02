@@ -19,7 +19,7 @@ def create_vctk_split(split_name, rawdata_path, dataset_path):
     dataset_path = Path(dataset_path)
 
     clean_paths = get_wav_paths(rawdata_path / f"clean_{split_name}set_wav")
-    noisy_paths = get_wav_paths(rawdata_path / f"noisy_{split_name}set_wav")
+    noisy_paths = get_wav_paths(rawdata_path / f"noisy_{split_name}set_28spk_wav")
 
     split = []
     for clean, noisy in zip(clean_paths, noisy_paths):
