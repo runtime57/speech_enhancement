@@ -7,7 +7,7 @@ defaults:
   - transforms: example
   - _self_
 optimizer:
-  _target_: torch.optim.Adam
+  _target_: torch.optim.AdamW
   lr: 3e-4
 lr_scheduler:
   _target_: torch.optim.lr_scheduler.StepLR
@@ -15,6 +15,10 @@ lr_scheduler:
   step_size: ${trainer.epoch_len}
 loss_function:
   _target_: src.loss.Loss
+  spec_factor_magnitude: 20000
+  spec_factor_complex: 20000
+  spec_gamma: 0.6
+  mask_f_under: 1
 trainer:
   log_step: 50
   n_epochs: 100
@@ -41,5 +45,5 @@ stft:
   lsnr_min: -15
   min_nb_freqs: 1
   df_order: 5
-  df_lookahead: 0
+  df_lookahead: 1
   pad_mode: input

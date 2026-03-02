@@ -25,3 +25,6 @@ inference:
   - _target_: src.metrics.SI_SNR
     device: ${metrics.device}
     name: "SI_SNR"
+  - _target_: src.metrics.SI_SNR
+    device: ${metrics.device}
+    name: "SI_SNRi"

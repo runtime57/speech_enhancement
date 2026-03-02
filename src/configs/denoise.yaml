@@ -6,7 +6,7 @@ defaults:
 denoise:
   input_path: "/home/runtime57/hse/cw3/mine/data/noisy_testset_wav/p232_001.wav"
   output_path: "data/denoised.wav"
-  from_pretrained: "/home/runtime57/hse/cw3/mine/saved/testing/model_best.pth"
+  from_pretrained: "saved/testing/model_best.pth"
   save_dir: "saved"
   device: auto
   seed: 1
@@ -22,5 +22,5 @@ stft:
   lsnr_min: -15
   min_nb_freqs: 1
   df_order: 5
-  df_lookahead: 0
+  df_lookahead: 1
   pad_mode: input

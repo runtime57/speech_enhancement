@@ -669,7 +669,7 @@ class Loss(nn.Module):
         mask_type: Literal["wg", "irm", "iam", "spec"] = "iam",
         mask_gamma: float = 0.6,
         mask_gamma_pred: float = 0.6,
-        mask_f_under: float = 2.0,
+        mask_f_under: float = 1.0,
         mask_max_freq: float = 0.0,
         mask_powers: Tuple[int, ...] = (2, 4),
         mask_factors: Tuple[float, ...] = (1.0, 10.0),
