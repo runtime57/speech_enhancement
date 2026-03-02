@@ -6,3 +6,9 @@ train:
   - _target_: src.metrics.PESQ
     device: ${metrics.device}
     name: "PESQ"
+  - _target_: src.metrics.SDRi
+    device: ${metrics.device}
+    name: "SDRi"
+  - _target_: src.metrics.SI_SNRi
+    device: ${metrics.device}
+    name: "SI_SNRi"
