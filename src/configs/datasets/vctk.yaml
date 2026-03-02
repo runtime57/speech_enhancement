@@ -1,0 +1,10 @@
+train:
+  _target_: src.datasets.VCTKDataset
+  rawdata_path: "/opt/software/datasets/VCTK/DS_10283_2791"
+  name: "train"
+  instance_transforms: ${transforms.instance_transforms.inference}
+test:
+  _target_: src.datasets.VCTKDataset
+  rawdata_path: "/opt/software/datasets/VCTK/DS_10283_2791"
+  name: "test"
+  instance_transforms: ${transforms.instance_transforms.inference}
