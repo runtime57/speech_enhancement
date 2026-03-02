@@ -15,7 +15,7 @@ from src.utils.config_utils import get_config, stft_config
 
 from src.datasets.base_dataset import BaseDataset
 from src.utils.io_utils import ROOT_PATH, read_json, write_json
-# from src.utils.vctk_utils import create_vctk_split
+from src.utils.vctk_utils import create_vctk_split
 from src.utils.config_utils import get_config
 from src.utils.io_utils import safe_torchaudio_load
 
@@ -28,7 +28,7 @@ class VCTKDataset(BaseDataset):
     """
 
     def __init__(
-        self, name="train", sr = 16000, *args, **kwargs
+        self, rawdata_path, name="train", sr = 16000, *args, **kwargs
     ):
         """
         Args:
@@ -40,23 +40,23 @@ class VCTKDataset(BaseDataset):
         """
         self.sr = sr
         index_path = ROOT_PATH / "data" / "vctk" / name / "index.json"
-
         # each nested dataset class must have an index field that
         # contains list of dicts. Each dict contains information about
         # the object, including label, path, etc.
         if index_path.exists():
             index = read_json(str(index_path))
         else:
-            index = self._create_index(name, sr)
+            index = self._create_index(rawdata_path,  name, sr)
 
         super().__init__(index, *args, **kwargs)
 
-    def _create_index(self, name, sr=16000):
+    def _create_index(self, rawdata_path, name, sr=16000):
         index = []
         data_path = ROOT_PATH / "data" / "vctk" / name
         data_path.mkdir(exist_ok=True, parents=True)
         
-        # create_vctk_split(name)
+        if name != "onebatch" and not os.exists(ROOT_PATH / "data" / "vctk" / name / "split.json"):
+            create_vctk_split(rawdata_path, data_path, name)
 
         split = read_json(ROOT_PATH / "data" / "vctk" / name / "split.json")
         number_of_zeros = 8
