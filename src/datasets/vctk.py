@@ -52,13 +52,13 @@ class VCTKDataset(BaseDataset):
 
     def _create_index(self, rawdata_path, name, sr=16000):
         index = []
-        data_path = ROOT_PATH / "data" / "vctk" / name
+        data_path = ROOT_PATH / "data" / "vctk"
         data_path.mkdir(exist_ok=True, parents=True)
         
         if name != "onebatch":
-            create_vctk_split(rawdata_path, data_path, name)
+            create_vctk_split(name, rawdata_path, data_path)
 
-        split = read_json(ROOT_PATH / "data" / "vctk" / name / "split.json")
+        split = read_json(data_path / name / "split.json")
         number_of_zeros = 8
         
         p = stft_config()
