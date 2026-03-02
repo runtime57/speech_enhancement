@@ -55,7 +55,7 @@ class VCTKDataset(BaseDataset):
         data_path = ROOT_PATH / "data" / "vctk" / name
         data_path.mkdir(exist_ok=True, parents=True)
         
-        if name != "onebatch" and not os.exists(ROOT_PATH / "data" / "vctk" / name / "split.json"):
+        if name != "onebatch":
             create_vctk_split(rawdata_path, data_path, name)
 
         split = read_json(ROOT_PATH / "data" / "vctk" / name / "split.json")
