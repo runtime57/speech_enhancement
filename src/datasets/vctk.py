@@ -64,7 +64,7 @@ class VCTKDataset(BaseDataset):
         p = stft_config()
 
         print("Creating VCTK Dataset")
-        for i, element in tqdm(enumerate(split)):
+        for i, element in tqdm(enumerate(split), total=len(split)):
             path = data_path / f"{i:0{number_of_zeros}d}.pt"
 
             clean_path, noisy_path = element["clean_path"], element["noisy_path"]
