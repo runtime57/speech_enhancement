@@ -1,0 +1,26 @@
+defaults:
+  - model: deepfilternet
+  - writer: wandb
+  - _self_
+
+denoise:
+  input_path: "data/noisy.wav"
+  output_path: "data/denoised.wav"
+  from_pretrained: null
+  save_dir: "saved"
+  device: auto
+  seed: 1
+
+stft:
+  sr: 16000
+  fft_size: 320
+  hop_length: 160
+  nb_erb: 24
+  nb_df: 96
+  norm_tau: 1
+  lsnr_max: 35
+  lsnr_min: -15
+  min_nb_freqs: 1
+  df_order: 5
+  df_lookahead: 0
+  pad_mode: input

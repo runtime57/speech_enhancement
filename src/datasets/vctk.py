@@ -17,6 +17,7 @@ from src.datasets.base_dataset import BaseDataset
 from src.utils.io_utils import ROOT_PATH, read_json, write_json
 # from src.utils.vctk_utils import create_vctk_split
 from src.utils.config_utils import get_config
+from src.utils.io_utils import safe_torchaudio_load
 
 class VCTKDataset(BaseDataset):
     """
@@ -68,8 +69,8 @@ class VCTKDataset(BaseDataset):
 
             clean_path, noisy_path = element["clean_path"], element["noisy_path"]
 
-            clean, _ = self.safe_torchaudio_load(clean_path, sr)
-            noisy, _ = self.safe_torchaudio_load(noisy_path, sr)
+            clean, _ = safe_torchaudio_load(clean_path, sr)
+            noisy, _ = safe_torchaudio_load(noisy_path, sr)
 
             safetensors.torch.save_file({
                 "clean": clean,
@@ -95,27 +96,4 @@ class VCTKDataset(BaseDataset):
         clean = obj["clean"]
         noisy = self.preprocess_data(noisy)
         return {"noisy": noisy, "clean": clean}
-
-
-    def safe_torchaudio_load(self, path: Union[str, Path], 
-                             target_sr: Optional[int] = None, mono: bool = True):
-        waveform, sr = torchaudio.load(str(path))  # [C, T]
-        waveform = waveform.to(torch.float32)
-
-        if mono and waveform.size(0) > 1:
-            waveform = waveform.mean(dim=0, keepdim=True)  # [1, T]
-
-        if target_sr is not None and sr != target_sr:
-            waveform = torchaudio.functional.resample(
-                waveform,
-                orig_freq=sr,
-                new_freq=target_sr,
-                resampling_method="sinc_interp_hann",
-                lowpass_filter_width=16,
-            )
-            sr = target_sr
-
-        if mono:
-            waveform = waveform.squeeze(0)  # [T]
-        return waveform.contiguous(), sr
         
