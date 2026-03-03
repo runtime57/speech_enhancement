@@ -851,11 +851,15 @@ class LocalSnrTarget(nn.Module):
         return max(int(round(ws)), 1)
 
     def forward(self, clean: Tensor, noise: Tensor, max_bin: Optional[int] = None) -> Tensor:
-        # clean: [B, 1, T, F]
+        # clean: [B, 1, T, F] (complex) or [B, 1, T, F, 2] (packed real/imag)
         # out: [B, T']
         if max_bin is not None:
-            clean = as_complex(clean[..., :max_bin])
-            noise = as_complex(noise[..., :max_bin])
+            if clean.dim() == 5:
+                clean = as_complex(clean[..., :max_bin, :])
+                noise = as_complex(noise[..., :max_bin, :])
+            else:
+                clean = as_complex(clean[..., :max_bin])
+                noise = as_complex(noise[..., :max_bin])
         return (
             local_snr(clean, noise, window_size=self.ws, db=self.db, window_size_ns=self.ws_ns)[0]
             .clamp(self.range[0], self.range[1])

@@ -83,7 +83,7 @@ class VCTKDataset(BaseDataset):
                 "original_noisy": noisy_path
             })
 
-        write_json(index, str(data_path / "index.json"))
+        write_json(index, str(data_path / name / "index.json"))
         return index
 
 

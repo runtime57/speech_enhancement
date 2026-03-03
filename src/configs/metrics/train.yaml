@@ -6,12 +6,12 @@ train:
   - _target_: src.metrics.PESQ
     device: ${metrics.device}
     name: "PESQ"
-  - _target_: src.metrics.SDRi
-    device: ${metrics.device}
-    name: "SDRi"
   - _target_: src.metrics.SI_SNR
     device: ${metrics.device}
     name: "SI_SNR"
+  - _target_: src.metrics.SI_SDR
+    device: ${metrics.device}
+    name: "SI_SDR"
 inference:
   - _target_: src.metrics.STOI
     device: ${metrics.device}
@@ -19,9 +19,9 @@ inference:
   - _target_: src.metrics.PESQ
     device: ${metrics.device}
     name: "PESQ"
-  - _target_: src.metrics.SDRi
+  - _target_: src.metrics.SI_SDR
     device: ${metrics.device}
-    name: "SDRi"
+    name: "SI_SDR"
   - _target_: src.metrics.SI_SNR
     device: ${metrics.device}
     name: "SI_SNR"

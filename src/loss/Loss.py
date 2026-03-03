@@ -305,51 +305,29 @@ class MaskSpecLoss(nn.Module):
 
 
 class DfAlphaLoss(nn.Module):
-    """Add a penalty to use DF for very noisy segments.
+    """DF usage gating loss from DeepFilterNet paper (Eq. 7).
 
-    Starting from lsnr_thresh, the penalty is increased and has its maximum at lsnr_min.
+    Penalizes using DF (alpha=1) for very noisy segments and encourages DF for clean segments:
+        L_alpha = alpha * 1[LSNR < lsnr_low] + (1 - alpha) * 1[LSNR > lsnr_high]
     """
 
     factor: Final[float]
-    lsnr_thresh: Final[float]
-    lsnr_min: Final[float]
+    lsnr_low: Final[float]
+    lsnr_high: Final[float]
 
-    def __init__(self, factor: float = 1, lsnr_thresh: float = -7.5, lsnr_min: float = -10.0):
+    def __init__(self, factor: float = 1.0, lsnr_low: float = -10.0, lsnr_high: float = -5.0):
         super().__init__()
         self.factor = factor
-        self.lsnr_thresh = lsnr_thresh
-        self.lsnr_min = lsnr_min
+        self.lsnr_low = lsnr_low
+        self.lsnr_high = lsnr_high
 
     def forward(self, pred_alpha: Tensor, target_lsnr: Tensor):
         # pred_alpha: [B, T, 1]
         # target_lsnr: [B, T]
-
-        # loss for lsnr < -5 -> penalize DF usage
-        w = self.lsnr_mapping(target_lsnr, self.lsnr_thresh, self.lsnr_min).view_as(pred_alpha)
-        # tmp = w[target_lsnr > -7.5]
-        # torch.testing.assert_allclose(tmp, torch.zeros_like(tmp))
-        # tmp = w[target_lsnr < -10]
-        # torch.testing.assert_allclose(tmp, torch.ones_like(tmp))
-        l_off = (pred_alpha * w).square().mean()
-
-        # loss for lsnr > 0
-        w = self.lsnr_mapping(target_lsnr, self.lsnr_thresh + 2.5, 0.0).view_as(pred_alpha)
-        # tmp = w[target_lsnr > 0]
-        # torch.testing.assert_allclose(tmp, torch.ones_like(tmp))
-        # tmp = w[target_lsnr < -5]
-        # torch.testing.assert_allclose(tmp, torch.zeros_like(tmp))
-        l_on = 0.1 * ((1 - pred_alpha) * w).abs().mean()
-        return l_off + l_on
-
-    def lsnr_mapping(
-        self, lsnr: Tensor, lsnr_thresh: float, lsnr_min: Optional[float] = None
-    ) -> Tensor:
-        """Map lsnr_min to 1 and lsnr_thresh to 0"""
-        # s = a * lsnr + b
-        lsnr_min = float(self.lsnr_min) if lsnr_min is None else lsnr_min
-        a_ = 1 / (lsnr_thresh - lsnr_min)
-        b_ = -a_ * lsnr_min
-        return 1 - torch.clamp(a_ * lsnr + b_, 0.0, 1.0)
+        low = (target_lsnr < self.lsnr_low).unsqueeze(-1)
+        high = (target_lsnr > self.lsnr_high).unsqueeze(-1)
+        loss = pred_alpha * low + (1 - pred_alpha) * high
+        return loss.float().mean() * self.factor
 
 
 class SiSdr(nn.Module):
@@ -689,6 +667,10 @@ class Loss(nn.Module):
         sdr_overlap: float = 0.0,
         # Local SNR loss
         lsnr_factor: float = 0.0005,
+        # DF alpha loss
+        alpha_factor: float = 0.0,
+        alpha_lsnr_low: float = -10.0,
+        alpha_lsnr_high: float = -5.0,
         # ASR loss
         asr_factor: float = 0.0,
         asr_factor_lm: float = 0.0,
@@ -705,6 +687,7 @@ class Loss(nn.Module):
         self.hop_length = int(p.hop_length)
         self.freq_bins = self.fft_size // 2 + 1
         self.store_losses = bool(store_losses)
+        self.df_bins = int(p.nb_df)
 
         stft_window = torch.hann_window(self.fft_size)
         self.register_buffer("_stft_window", stft_window)
@@ -806,6 +789,18 @@ class Loss(nn.Module):
         self.lsnr_f = float(lsnr_factor)
         self.lsnrl = LocalSnrLoss(self.lsnr_f) if self.lsnr_f > 0 else None
 
+        # DF alpha loss
+        self.al_f = float(alpha_factor)
+        self.al = (
+            DfAlphaLoss(
+                factor=self.al_f,
+                lsnr_low=float(alpha_lsnr_low),
+                lsnr_high=float(alpha_lsnr_high),
+            )
+            if self.al_f > 0
+            else None
+        )
+
         # ASR loss
         self.asrl_f = float(asr_factor)
         self.asrl_f_lm = float(asr_factor_lm)
@@ -885,6 +880,7 @@ class Loss(nn.Module):
         enh: Optional[Tensor] = None,
         m: Optional[Tensor] = None,
         lsnr: Optional[Tensor] = None,
+        df_alpha: Optional[Tensor] = None,
         **batch,
     ) -> Dict[str, Tensor]:
         """Compute all enabled loss terms; returns dict with 'loss' and components."""
@@ -894,6 +890,7 @@ class Loss(nn.Module):
             raise ValueError("Missing enhanced spectrogram `enh`.")
         m = m if m is not None else batch.get("mask", batch.get("m"))
         lsnr = lsnr if lsnr is not None else batch.get("lsnr")
+        df_alpha = df_alpha if df_alpha is not None else batch.get("df_alpha")
 
         clean_spec = self._as_spec(clean)
         noisy_spec = self._as_spec(noisy)
@@ -914,7 +911,7 @@ class Loss(nn.Module):
             clean_td = self.istft(clean_spec)
 
         z = torch.zeros((), device=clean_spec.device)
-        ml = sl = mrsl = sdrl = asrl = lsnrl = cal = z
+        ml = sl = mrsl = sdrl = asrl = lsnrl = al = cal = z
 
         if self.ml is not None and self.ml_f != 0:
             if m is None:
@@ -937,10 +934,18 @@ class Loss(nn.Module):
             lsnr_gt = self.lsnr_target(clean_spec, noise=noisy_spec - clean_spec)
             lsnrl = self.lsnrl(input=lsnr, target_lsnr=lsnr_gt)
 
+        if self.al is not None and self.al_f != 0:
+            if df_alpha is None:
+                raise ValueError("DfAlphaLoss enabled but `df_alpha` is missing.")
+            lsnr_gt_df = self.lsnr_target(
+                clean_spec, noise=noisy_spec - clean_spec, max_bin=self.df_bins
+            )
+            al = self.al(pred_alpha=df_alpha, target_lsnr=lsnr_gt_df)
+
         if self.sdrl is not None and self.sdrl_f != 0:
             sdrl = self.sdrl(enhanced_td, clean_td)
 
-        total = ml + sl + mrsl + sdrl + asrl + lsnrl + cal
+        total = ml + sl + mrsl + sdrl + asrl + lsnrl + al + cal
         return {
             "loss": total,
             "ml": ml,
@@ -949,5 +954,6 @@ class Loss(nn.Module):
             "sdrl": sdrl,
             "asrl": asrl,
             "lsnrl": lsnrl,
+            "al": al,
             "cal": cal,
         }

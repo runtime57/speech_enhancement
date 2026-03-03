@@ -65,7 +65,7 @@ class Trainer(BaseTrainer):
         feat_spec, _ = exp_unit_norm(feat_spec)
 
 
-        enh, m, lsnr, _ = self.model(
+        enh, m, lsnr, df_alpha = self.model(
             spec=noisy_spec,
             feat_erb=feat_erb,
             feat_spec=feat_spec,
@@ -78,6 +78,7 @@ class Trainer(BaseTrainer):
                 "enh": enh,
                 "m": m,
                 "lsnr": lsnr,
+                "df_alpha": df_alpha,
             }
         )
 
@@ -112,6 +113,7 @@ class Trainer(BaseTrainer):
             enh=enh,
             m=m,
             lsnr=lsnr,
+            df_alpha=df_alpha,
         )
         batch.update(all_losses)
 

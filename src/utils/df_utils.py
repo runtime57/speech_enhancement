@@ -42,7 +42,7 @@ class angle_re_im(Function):
     @staticmethod
     def backward(ctx, grad: Tensor) -> Tuple[Tensor, Tensor]:
         re, im = ctx.saved_tensors
-        grad_inv = grad / (re.square() + im.square()).clamp_min_(1e-10)
+        grad_inv = grad / (re.square() + im.square()).clamp_min_(1e-12)
         return -im * grad_inv, re * grad_inv
 
 
@@ -57,7 +57,7 @@ class angle(Function):
     @staticmethod
     def backward(ctx, grad: Tensor):
         (x,) = ctx.saved_tensors
-        grad_inv = grad / (x.real.square() + x.imag.square()).clamp_min_(1e-10)
+        grad_inv = grad / (x.real.square() + x.imag.square()).clamp_min_(1e-12)
         return torch.view_as_complex(torch.stack((-x.imag * grad_inv, x.real * grad_inv), dim=-1))
 
 
