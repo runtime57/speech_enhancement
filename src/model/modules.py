@@ -12,7 +12,7 @@ from torch.nn import init
 from torch.nn.parameter import Parameter
 from typing_extensions import Final
 
-from src.model.comfifastgrnn import ComfiFastGRNN as FastGRNN
+from src.model.comfifastgrnn import ComfiFastGRNN as FastGRNN, gen_non_linearity
 from src.utils.config_utils import stft_config
 
 from src.utils.df_utils import as_complex, as_real, get_norm_alpha
@@ -720,6 +720,10 @@ class GroupedGRNNLayer(nn.Module):
         self.num_directions = 2 if bidirectional else 1
         self.groups = groups
         self.batch_first = batch_first
+        self.gate_non_linearity = gate_non_linearity
+        self.update_non_linearity = update_non_linearity
+        self.w_rank = w_rank
+        self.u_rank = u_rank
         self.layers = nn.ModuleList(
             FastGRNN(
                 input_size=self.input_size,
@@ -752,24 +756,121 @@ class GroupedGRNNLayer(nn.Module):
             device=device,
         )
 
+    def _stack_direction_params(self, forward: bool = True) -> dict[str, Tensor]:
+        cells = []
+        for layer in self.layers:
+            if forward:
+                cells.append(layer.cells_fwd[0])
+            else:
+                assert layer.cells_bwd is not None
+                cells.append(layer.cells_bwd[0])
+
+        params = {
+            "bias_gate": torch.stack([cell.bias_gate.squeeze(0) for cell in cells], dim=0),
+            "bias_update": torch.stack([cell.bias_update.squeeze(0) for cell in cells], dim=0),
+            "zeta": torch.stack([cell.zeta.view(1) for cell in cells], dim=0),
+            "nu": torch.stack([cell.nu.view(1) for cell in cells], dim=0),
+            "lambd": torch.stack([cell.lambd.view(1) for cell in cells], dim=0),
+            "gamma": torch.stack([cell.gamma.view(1) for cell in cells], dim=0),
+        }
+
+        if self.w_rank is None:
+            params["w"] = torch.stack([cell.w_matrix for cell in cells], dim=0)
+        else:
+            params["w1"] = torch.stack([cell.w_matrix_1 for cell in cells], dim=0)
+            params["w2"] = torch.stack([cell.w_matrix_2 for cell in cells], dim=0)
+
+        if self.u_rank is None:
+            params["u"] = torch.stack([cell.u_matrix for cell in cells], dim=0)
+        else:
+            params["u1"] = torch.stack([cell.u_matrix_1 for cell in cells], dim=0)
+            params["u2"] = torch.stack([cell.u_matrix_2 for cell in cells], dim=0)
+
+        return params
+
+    def _grouped_step(self, x_t: Tensor, h_prev: Tensor, params: dict[str, Tensor]) -> Tensor:
+        # x_t: [B, G, I/G], h_prev: [B, G, H/G]
+        if self.w_rank is None:
+            w_proj = torch.einsum("bgi,gih->bgh", x_t, params["w"])
+        else:
+            w_proj = torch.einsum("bgi,gir->bgr", x_t, params["w1"])
+            w_proj = torch.einsum("bgr,grh->bgh", w_proj, params["w2"])
+
+        if self.u_rank is None:
+            u_proj = torch.einsum("bgh,ghk->bgk", h_prev, params["u"])
+        else:
+            u_proj = torch.einsum("bgh,ghr->bgr", h_prev, params["u1"])
+            u_proj = torch.einsum("bgr,grh->bgh", u_proj, params["u2"])
+
+        bias_gate = params["bias_gate"].unsqueeze(0)
+        bias_update = params["bias_update"].unsqueeze(0)
+        z = gen_non_linearity(w_proj + u_proj + bias_gate, self.gate_non_linearity)
+        h_hat = gen_non_linearity(w_proj + u_proj + bias_update, self.update_non_linearity)
+
+        zeta = torch.sigmoid(params["zeta"]).view(1, self.groups, 1)
+        nu = torch.sigmoid(params["nu"]).view(1, self.groups, 1)
+        h = z * h_prev + (zeta * (1 - z) + nu) * h_hat
+
+        gamma = torch.clamp(params["gamma"], 0.0, 1.0).view(1, self.groups, 1)
+        lambd = params["lambd"].view(1, self.groups, 1)
+        return gamma * h + (1 - gamma) * lambd
+
+    def _run_direction(
+        self,
+        inputs: Tensor,
+        h0: Tensor,
+        params: dict[str, Tensor],
+        reverse: bool = False,
+    ) -> Tuple[Tensor, Tensor]:
+        # inputs: [B, T, G, I/G], h0: [B, G, H/G]
+        b, t, _, _ = inputs.shape
+        outputs = inputs.new_empty(b, t, self.groups, self.hidden_size)
+        h = h0
+        time_indices = range(t - 1, -1, -1) if reverse else range(t)
+        for idx in time_indices:
+            h = self._grouped_step(inputs[:, idx], h, params)
+            outputs[:, idx] = h
+        return outputs, h
+
     def forward(self, input: Tensor, h0: Optional[Tensor] = None) -> Tuple[Tensor, Tensor]:
         # input shape: [B, T, I] if batch_first else [T, B, I], B: batch_size, I: input_size
         # state shape: [G*D, B, H], where G: groups, D: num_directions, H: hidden_size
+        transposed = False
+        if not self.batch_first:
+            input = input.transpose(0, 1)
+            transposed = True
+
         if h0 is None:
-            dim0, dim1 = input.shape[:2]
-            bs = dim0 if self.batch_first else dim1
-            h0 = self.get_h0(bs, device=input.device)
-        outputs: List[Tensor] = []
-        outstates: List[Tensor] = []
-        for i, layer in enumerate(self.layers):
-            o, s = layer(
-                input[..., i * self.input_size : (i + 1) * self.input_size],
-                h0[i * self.num_directions : (i + 1) * self.num_directions].detach(),
+            bs = input.shape[0]
+            h0 = input.new_zeros(self.groups * self.num_directions, bs, self.hidden_size)
+
+        batch_size, seq_len, _ = input.shape
+        grouped_input = input.reshape(batch_size, seq_len, self.groups, self.input_size)
+        grouped_state = (
+            h0.reshape(self.groups, self.num_directions, batch_size, self.hidden_size)
+            .permute(1, 2, 0, 3)
+            .contiguous()
+        )
+
+        fw_params = self._stack_direction_params(forward=True)
+        fw_out, h_fw = self._run_direction(grouped_input, grouped_state[0].detach(), fw_params)
+
+        outputs = [fw_out]
+        outstates = [h_fw]
+        if self.bidirectional:
+            bw_params = self._stack_direction_params(forward=False)
+            bw_out, h_bw = self._run_direction(
+                grouped_input, grouped_state[1].detach(), bw_params, reverse=True
             )
-            outputs.append(o)
-            outstates.append(s)
-        output = torch.cat(outputs, dim=-1)
-        h = torch.cat(outstates, dim=0)
+            outputs.append(bw_out)
+            outstates.append(h_bw)
+
+        output = torch.cat(outputs, dim=-1).reshape(batch_size, seq_len, -1)
+        h = torch.stack(outstates, dim=0).permute(2, 0, 1, 3).reshape(
+            self.groups * self.num_directions, batch_size, self.hidden_size
+        )
+        if transposed:
+            output = output.transpose(0, 1)
         return output, h
 
 
