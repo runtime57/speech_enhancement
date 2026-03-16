@@ -2,6 +2,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
+import os
 
 
 class CometMLWriter:
@@ -20,6 +21,7 @@ class CometMLWriter:
         run_id=None,
         run_name=None,
         mode="online",
+        offline_directory=None,
         **kwargs,
     ):
         """
@@ -40,6 +42,8 @@ class CometMLWriter:
         try:
             import comet_ml
 
+            if offline_directory is not None and mode == "offline":
+                os.environ['COMET_OFFLINE_DIRECTORY'] = offline_directory
             comet_ml.login()
 
             self.run_id = run_id

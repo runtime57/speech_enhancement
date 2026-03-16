@@ -1,6 +1,6 @@
 defaults:
-  - model: deepfilternet
-  - writer: wandb
+  - model: deepfilternetgrnn
+  - writer: cometml
   - metrics: train
   - datasets: onebatch
   - dataloader: onebatch

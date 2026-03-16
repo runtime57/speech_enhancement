@@ -1,13 +1,12 @@
 defaults:
-  - model: deepfilternet
+  - model: deepfilternetgrnn
   - writer: wandb
   - _self_
 
 denoise:
   input_path: "/home/runtime57/hse/cw3/mine/data/noisy_testset_wav/p232_001.wav"
   output_path: "data/denoised.wav"
-  from_pretrained: "saved/testing/model_best.pth"
-  save_dir: "saved"
+  from_pretrained: "/home/runtime57/hse/cw3/mine/saved/fullrun/model_best.pth"
   device: auto
   seed: 1
 
