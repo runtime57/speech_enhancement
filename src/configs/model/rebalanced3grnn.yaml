@@ -1,7 +1,7 @@
 _target_: src.model.DfNetGRNN
 
-conv_ch: 48
+conv_ch: 32
 emb_hidden_dim: 512
 emb_num_layers: 3
-df_hidden_dim: 576
+df_hidden_dim: 704
 df_num_layers: 2
