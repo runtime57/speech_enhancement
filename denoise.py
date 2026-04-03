@@ -45,7 +45,7 @@ def _load_model_weights(model: torch.nn.Module, checkpoint_path: Path, device: s
     if not checkpoint_path.exists():
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
 
-    checkpoint = torch.load(str(checkpoint_path), map_location=device)
+    checkpoint = torch.load(str(checkpoint_path), map_location=device, weights_only=False)
     state_dict = checkpoint.get("state_dict", checkpoint) if isinstance(checkpoint, dict) else checkpoint
     model.load_state_dict(state_dict)
 
@@ -116,7 +116,7 @@ def main(config) -> None:
     noisy_wav = noisy_wav.unsqueeze(0).to(device)  # [B,T]
 
     enh_wav = _denoise_waveform(model, noisy=noisy_wav).cpu().clamp(-1.0, 1.0)  # [B,T]
-
+    
     safe_torchaudio_save(output_path, enh_wav, sr=int(p.sr))
     print(f"Saved enhanced audio to: {output_path}")
 

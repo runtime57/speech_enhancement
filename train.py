@@ -8,6 +8,7 @@ from omegaconf import OmegaConf
 from src.datasets.data_utils import get_dataloaders
 from src.trainer import Trainer
 from src.utils.init_utils import set_random_seed, setup_saving_and_logging
+from src.utils.config_utils import setup_config
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -27,6 +28,7 @@ def main(config):
     project_config = OmegaConf.to_container(config)
     logger = setup_saving_and_logging(config)
     writer = instantiate(config.writer, logger, project_config)
+    setup_config(config)
 
     if config.trainer.device == "auto":
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -40,6 +42,7 @@ def main(config):
     # build model architecture, then print to console
     model = instantiate(config.model).to(device)
     logger.info(model)
+    print(sum(p.numel() for p in model.parameters()))
 
     # get function handles of loss and metrics
     loss_function = instantiate(config.loss_function).to(device)

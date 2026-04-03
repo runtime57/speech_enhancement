@@ -1,5 +1,5 @@
 defaults:
-  - model: deepfilternet
+  - model: deepfilternetgrnn
   - writer: wandb
   - _self_
 

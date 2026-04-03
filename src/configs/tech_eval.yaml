@@ -1,0 +1,12 @@
+defaults:
+  - model: rebalanced3grnn.yaml
+  - datasets: onebatch
+  - dataloader: onebatch
+  - transforms: example
+  - _self_
+
+evaluator:
+  device_tensors: ["noisy", "clean"] 
+  device: auto
+  save_path: "model_metrics"
+  seed: 1
