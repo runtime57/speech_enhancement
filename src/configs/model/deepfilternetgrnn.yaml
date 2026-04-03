@@ -1,2 +1,1 @@
-# src/configs/model/deepfilternet.yaml
 _target_: src.model.DfNetGRNN
