@@ -6,7 +6,7 @@ defaults:
 denoise:
   input_path: "/home/runtime57/hse/cw3/mine/data/df_noisy.wav"
   output_path: "data/denoised.wav"
-  from_pretrained: "/home/runtime57/hse/cw3/mine/saved/model_best.pth"
+  from_pretrained: "/home/runtime57/hse/cw3/mine/saved/fullrun/model_best.pth"
   device: auto
   seed: 1
 
