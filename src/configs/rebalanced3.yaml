@@ -1,0 +1,53 @@
+defaults:
+  - model: rebalanced3grnn
+  - writer: reb3
+  - metrics: train
+  - datasets: vctk
+  - dataloader: train
+  - transforms: example
+  - _self_
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: 1e-3
+lr_scheduler:
+  _target_: torch.optim.lr_scheduler.StepLR
+  gamma: 0.9
+  step_size: ${trainer.epoch_len}
+loss_function:
+  _target_: src.loss.Loss
+  spec_factor_magnitude: 20000
+  spec_factor_complex: 20000
+  spec_gamma: 0.6
+  # keep only Eq. (8): L = λ_spec * L_spec + λ_α * L_α
+  lsnr_factor: 0.0
+  alpha_factor: 1.0
+  alpha_lsnr_low: -10.0
+  alpha_lsnr_high: -5.0
+  mask_f_under: 1
+trainer:
+  log_step: 50
+  n_epochs: 100
+  epoch_len: 362
+  device_tensors: ["noisy", "clean"] # which tensors should be on device (ex. GPU)
+  resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
+  device: auto # device name or "auto"
+  override: True # if True, will override the previous run with the same name
+  monitor: "max test_SI_SNR" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric
+  save_period: 5 # checkpoint each save_period epochs in addition to the best epoch
+  early_stop: ${trainer.n_epochs} # epochs for early stopping
+  save_dir: "saved"
+  seed: 1
+
+stft:
+  sr: 16000
+  fft_size: 320
+  hop_length: 160
+  nb_erb: 24
+  nb_df: 96
+  norm_tau: 1
+  lsnr_max: 35
+  lsnr_min: -15
+  min_nb_freqs: 1
+  df_order: 5
+  df_lookahead: 1
+  pad_mode: input
