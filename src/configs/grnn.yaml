@@ -1,6 +1,6 @@
 defaults:
-  - model: xconv
-  - writer: xconv
+  - model: deepfilternetgrnn
+  - writer: grnn
   - metrics: train
   - datasets: vctk
   - dataloader: train
@@ -38,6 +38,8 @@ trainer:
   save_dir: "saved"
   seed: 1
 
+  from_pretrained: "saved/grnn/model_best.pth"
+# если поменять его здесь, то надо и в denoise.yam
 stft:
   sr: 16000
   fft_size: 320
