@@ -38,7 +38,6 @@ trainer:
   save_dir: "saved"
   seed: 1
 
-  from_pretrained: "saved/grnn/model_best.pth"
 # если поменять его здесь, то надо и в denoise.yam
 stft:
   sr: 16000

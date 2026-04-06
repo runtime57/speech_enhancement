@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Iterable, Union
 
+import torch
 import torch.nn as nn
 from torch import Tensor
 
@@ -15,6 +16,25 @@ def _pair_kernel(kernel_size: Union[int, Iterable[int]]) -> tuple[int, int]:
     if len(k) != 2:
         raise ValueError("kernel_size must be int or iterable of length 2")
     return int(k[0]), int(k[1])
+
+
+class AffinePReLU(nn.Module):
+    def __init__(self, channels: int, width: int, init: float = 0.25):
+        super().__init__()
+        self.affine_weight = nn.Parameter(torch.ones(channels, width))
+        self.affine_bias = nn.Parameter(torch.zeros(channels, width))
+        self.slope_weight = nn.Parameter(torch.full((channels,), init))
+
+    def forward(self, x: Tensor) -> Tensor:
+        y = self.affine_weight[None, :, None, :] * x + self.affine_bias[None, :, None, :]
+        y = y + torch.where(x > 0, x, self.slope_weight.view(1, -1, 1, 1) * x)
+        return y
+
+
+def _make_activation(use_affine: bool, channels: int, width: int) -> nn.Module:
+    if use_affine:
+        return AffinePReLU(channels, width)
+    return nn.ReLU(inplace=True)
 
 
 class _BaseULBlock(nn.Module):
@@ -70,8 +90,11 @@ class _BaseULBlock(nn.Module):
 
 class XConvBlock(_BaseULBlock):
     """
-    Lightweight plain conv block:
-        conv -> BN -> ReLU
+    Plain conv block:
+        conv -> BN -> activation
+    activation is selected by use_affine:
+        False -> ReLU
+        True  -> AffinePReLU
     """
 
     def __init__(
@@ -85,6 +108,7 @@ class XConvBlock(_BaseULBlock):
         use_deconv: bool = False,
         is_last: bool = False,
         lookahead: int = 0,
+        use_affine: bool = False,
     ):
         super().__init__()
         kernel_size = _pair_kernel(kernel_size)
@@ -105,7 +129,7 @@ class XConvBlock(_BaseULBlock):
             nn.BatchNorm2d(out_channels),
         ]
         if not is_last:
-            layers.append(nn.ReLU(inplace=True))
+            layers.append(_make_activation(use_affine, out_channels, width))
 
         self.ops = nn.Sequential(*layers)
 
@@ -115,9 +139,12 @@ class XConvBlock(_BaseULBlock):
 
 class XDWSBlock(_BaseULBlock):
     """
-    Lightweight depthwise-separable block:
-        1x1 pointwise -> BN -> ReLU
-        -> depthwise(kx3 or transposed) -> BN -> ReLU
+    Depthwise-separable block:
+        1x1 pointwise -> BN -> activation
+        -> depthwise(kx3 or transposed) -> BN -> activation
+    activation is selected by use_affine:
+        False -> ReLU
+        True  -> AffinePReLU
     """
 
     def __init__(
@@ -131,16 +158,19 @@ class XDWSBlock(_BaseULBlock):
         use_deconv: bool = False,
         is_last: bool = False,
         lookahead: int = 0,
+        use_affine: bool = False,
     ):
         super().__init__()
         kernel_size = _pair_kernel(kernel_size)
         kt, _ = kernel_size
         conv_module = nn.ConvTranspose2d if use_deconv else nn.Conv2d
 
+        in_width = self.infer_in_width(width, stride, use_deconv)
+
         self.pconv = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, 1, groups=groups, bias=False),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
+            _make_activation(use_affine, out_channels, in_width),
         )
 
         dconv_layers = [
@@ -157,7 +187,7 @@ class XDWSBlock(_BaseULBlock):
             nn.BatchNorm2d(out_channels),
         ]
         if not is_last:
-            dconv_layers.append(nn.ReLU(inplace=True))
+            dconv_layers.append(_make_activation(use_affine, out_channels, width))
         self.dconv = nn.Sequential(*dconv_layers)
 
     def forward(self, x: Tensor) -> Tensor:
@@ -168,12 +198,15 @@ class XDWSBlock(_BaseULBlock):
 
 class XMBBlock(_BaseULBlock):
     """
-    Lightweight MobileNet-like inverted bottleneck block:
-        1x1 pointwise -> BN -> ReLU
-        -> depthwise(kx3 or transposed) -> BN -> ReLU
+    MobileNet-like inverted bottleneck block:
+        1x1 pointwise -> BN -> activation
+        -> depthwise(kx3 or transposed) -> BN -> activation
         -> 1x1 pointwise -> BN
         -> residual if shape matches
-        -> ReLU (unless last)
+        -> activation (unless last)
+    activation is selected by use_affine:
+        False -> ReLU
+        True  -> AffinePReLU
     """
 
     def __init__(
@@ -187,16 +220,19 @@ class XMBBlock(_BaseULBlock):
         use_deconv: bool = False,
         is_last: bool = False,
         lookahead: int = 0,
+        use_affine: bool = False,
     ):
         super().__init__()
         kernel_size = _pair_kernel(kernel_size)
         kt, _ = kernel_size
         conv_module = nn.ConvTranspose2d if use_deconv else nn.Conv2d
 
+        in_width = self.infer_in_width(width, stride, use_deconv)
+
         self.pconv1 = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, 1, groups=groups, bias=False),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
+            _make_activation(use_affine, out_channels, in_width),
         )
 
         self.dconv = nn.Sequential(
@@ -211,7 +247,7 @@ class XMBBlock(_BaseULBlock):
                 use_deconv,
             ),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
+            _make_activation(use_affine, out_channels, width),
         )
 
         self.pconv2 = nn.Sequential(
@@ -219,7 +255,7 @@ class XMBBlock(_BaseULBlock):
             nn.BatchNorm2d(out_channels),
         )
 
-        self.out_act = nn.Identity() if is_last else nn.ReLU(inplace=True)
+        self.out_act = nn.Identity() if is_last else _make_activation(use_affine, out_channels, width)
 
     def forward(self, x: Tensor) -> Tensor:
         input_x = x
@@ -247,6 +283,8 @@ def make_block(
     lookahead: int = 0,
 ) -> nn.Module:
     name = block_name.lower()
+    use_affine = name.startswith("x")
+
     if name in {"xconv", "conv"}:
         cls = XConvBlock
     elif name in {"xdws", "dws"}:
@@ -266,4 +304,5 @@ def make_block(
         use_deconv=use_deconv,
         is_last=is_last,
         lookahead=lookahead,
+        use_affine=use_affine,
     )

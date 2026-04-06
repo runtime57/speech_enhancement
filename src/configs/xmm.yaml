@@ -1,6 +1,6 @@
 defaults:
-  - model: deepfilternetgrnn
-  - writer: grnn
+  - model: xmm
+  - writer: xmm
   - metrics: train
   - datasets: vctk
   - dataloader: train
@@ -29,7 +29,7 @@ trainer:
   n_epochs: 100
   epoch_len: 362
   device_tensors: ["noisy", "clean"] # which tensors should be on device (ex. GPU)
-  resume_from: "model_best.pth" # null or path to the checkpoint dir with *.pth and config.yaml
+  resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
   device: auto # device name or "auto"
   override: True # if True, will override the previous run with the same name
   monitor: "max test_SI_SNR" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric
@@ -38,7 +38,6 @@ trainer:
   save_dir: "saved"
   seed: 1
 
-# если поменять его здесь, то надо и в denoise.yam
 stft:
   sr: 16000
   fft_size: 320

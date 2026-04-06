@@ -1,1 +1,3 @@
-_target_: src.model.DfNetMMGRNN
+_target_: src.model.DfNetConv
+
+block_name: "mm"

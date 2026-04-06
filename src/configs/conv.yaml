@@ -1,6 +1,6 @@
 defaults:
-  - model: deepfilternetgrnn
-  - writer: grnn
+  - model: conv
+  - writer: conv
   - metrics: train
   - datasets: vctk
   - dataloader: train
@@ -38,7 +38,6 @@ trainer:
   save_dir: "saved"
   seed: 1
 
-# если поменять его здесь, то надо и в denoise.yam
 stft:
   sr: 16000
   fft_size: 320
