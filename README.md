@@ -1,145 +1,74 @@
-# PyTorch Template for DL projects
+# Multimodal System for Audio-Visual Deepfake Detection
 
-<p align="center">
-  <a href="#about">About</a> •
-  <a href="#tutorials">Tutorials</a> •
-  <a href="#examples">Examples</a> •
-  <a href="#installation">Installation</a> •
-  <a href="#how-to-use">How To Use</a> •
-  <a href="#useful-links">Useful Links</a> •
-  <a href="#credits">Credits</a> •
-  <a href="#license">License</a>
-</p>
+We investigate parameter-efficient modifications of DeepFilterNet by replacing GRU blocks with FastGRNN and exploring alternative convolutional designs. Our approach significantly reduces the model size while preserving comparable speech enhancement quality. See the paper for details.
 
-<p align="center">
-<a href="https://github.com/Blinorot/pytorch_project_template/generate">
-  <img src="https://img.shields.io/badge/use%20this-template-green?logo=github">
-</a>
-<a href="https://github.com/Blinorot/pytorch_project_template/blob/main/LICENSE">
-   <img src=https://img.shields.io/badge/license-MIT-blue.svg>
-</a>
-<a href="https://github.com/Blinorot/pytorch_project_template/blob/main/CITATION.cff">
-   <img src="https://img.shields.io/badge/cite-this%20repo-purple">
-</a>
-</p>
-
-## About
-
-This repository contains a template for [PyTorch](https://pytorch.org/)-based Deep Learning projects.
-
-The template utilizes different python-dev techniques to improve code readability. Configuration methods enhance reproducibility and experiments control.
-
-The repository is released as a part of the [HSE DLA course](https://github.com/markovka17/dla), however, can easily be adopted for any DL-task.
-
-This template is the official recommended template for the [EPFL CS-433 ML Course](https://www.epfl.ch/labs/mlo/machine-learning-cs-433/).
-
-> 📖 **If you use this template in your work, please cite this repository or include a reference. Attribution supports the project and encourages continued development.**
-
-## Tutorials
-
-This template utilizes experiment tracking techniques, such as [WandB](https://docs.wandb.ai/) and [Comet ML](https://www.comet.com/docs/v2/), and [Hydra](https://hydra.cc/docs/intro/) for the configuration. It also automatically reformats code and conducts several checks via [pre-commit](https://pre-commit.com/). If you are not familiar with these tools, we advise you to look at the tutorials below:
-
-- [Python Dev Tips](https://github.com/ebezzam/python-dev-tips): information about [Git](https://git-scm.com/doc), [pre-commit](https://pre-commit.com/), [Hydra](https://hydra.cc/docs/intro/), and other stuff for better Python code development. The YouTube recording of the workshop is available [here](https://youtu.be/okxaTuBdDuY).
-
-- [Seminar on R&D Coding 2025](https://youtu.be/PE1zaW5it_A): Seminar from the [LauzHack Deep Learning Bootcamp](https://github.com/LauzHack/deep-learning-bootcamp/) with discussion on logging, project-based coding, configuration, and reproducibility. The materials can be found [here](https://github.com/LauzHack/deep-learning-bootcamp/tree/summer25/day05).
-
-- [Seminar on R&D Coding 2024](https://youtu.be/sEA-Js5ZHxU): Seminar from the [LauzHack Deep Learning Bootcamp](https://github.com/LauzHack/deep-learning-bootcamp/) with template discussion and reasoning. It also explains how to work with [WandB](https://docs.wandb.ai/). The seminar materials can be found [here](https://github.com/LauzHack/deep-learning-bootcamp/blob/main/day03/Seminar_WandB_and_Coding.ipynb).
-
-- [HSE DLA Course Introduction Week](https://github.com/markovka17/dla/tree/2024/week01): combines the two seminars above into one with some updates, including an extra example for [Comet ML](https://www.comet.com/docs/v2/).
-
-- [PyTorch Basics](https://github.com/markovka17/dla/tree/2024/week01/intro_to_pytorch): several notebooks with [PyTorch](https://pytorch.org/docs/stable/index.html) basics and corresponding seminar recordings from the [LauzHack Deep Learning Bootcamp](https://github.com/LauzHack/deep-learning-bootcamp/).
-
-To start working with a template, just click on the `use this template` button.
-
-<a href="https://github.com/Blinorot/pytorch_project_template/generate">
-  <img src="https://img.shields.io/badge/use%20this-template-green?logo=github">
-</a>
-
-You can choose any of the branches as a starting point. [Set your choice as the default branch](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-branches-in-your-repository/changing-the-default-branch) in the repository settings. You can also [delete unnecessary branches](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-and-deleting-branches-within-your-repository).
-
-## Examples
-
-> [!IMPORTANT]
-> The main branch leaves some of the code parts empty or fills them with dummy examples, showing just the base structure. The final users can add code required for their own tasks.
-
-You can find examples of this template completed for different tasks in other branches:
-
-- [Image classification](https://github.com/Blinorot/pytorch_project_template/tree/example/image-classification): simple classification problem on [MNIST](https://yann.lecun.com/exdb/mnist/) and [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html) datasets.
-
-- [ASR](https://github.com/Blinorot/pytorch_project_template/tree/example/asr): template for the automatic speech recognition (ASR) task. Some of the parts (for example, `collate_fn` and beam search for `text_encoder`) are missing for studying purposes of [HSE DLA course](https://github.com/markovka17/dla).
 
 ## Installation
 
-Installation may depend on your task. The general steps are the following:
+0. Create and install [`conda`](https://conda.io/projects/conda/en/latest/user-guide/getting-started.html) environment
 
-0. (Optional) Create and activate new environment using [`conda`](https://conda.io/projects/conda/en/latest/user-guide/getting-started.html) or `venv` ([`+pyenv`](https://github.com/pyenv/pyenv)).
+    ```
+    conda create -n speech_enhancement python=3.8 -y
+    conda activate speech_enhancement
+    ```
 
-   a. `conda` version:
+1. Clone this repository
 
-   ```bash
-   # create env
-   conda create -n project_env python=PYTHON_VERSION
+    ```
+    git clone git@github.com:runtime57/speech_enhancement.git
+    cd speech_enhancement
+    ```
 
-   # activate env
-   conda activate project_env
-   ```
+2. Install all required packages
+    ```
+    pip install -r requirements.txt
+    ```
+3. Install pre-commit
+    ```
+    pre-commit install
+    ```
 
-   b. `venv` (`+pyenv`) version:
+## Experimental setup
 
-   ```bash
-   # create env
-   ~/.pyenv/versions/PYTHON_VERSION/bin/python3 -m venv project_env
+For both training and evaluation, we used the [VCTK+DEMAND](https://datashare.ed.ac.uk/handle/10283/2791) dataset, which is widely used in speech enhancement research as a standard benchmark, which allows for direct comparison between different methods.
 
-   # alternatively, using default python version
-   python3 -m venv project_env
+Configurations for all types of used baselines are listed in `src/configs/model`. Feel free to conduct your own experiments by changing used model in `src/configs`.
 
-   # activate env
-   source project_env/bin/activate
-   ```
 
-1. Install all required packages
+## Train and inference
+ 
 
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. Install `pre-commit`:
-   ```bash
-   pre-commit install
-   ```
-
-## How To Use
-
-To train a model, run the following command:
-
-```bash
+To train a new model, use the following command:
+```
 python3 train.py -cn=CONFIG_NAME HYDRA_CONFIG_ARGUMENTS
 ```
-
-Where `CONFIG_NAME` is a config from `src/configs` and `HYDRA_CONFIG_ARGUMENTS` are optional arguments.
+Where `CONFIG_NAME` is a config from `src/configs` and `HYDRA_CONFIG_ARGUMENTS` are optional arguments
 
 To run inference (evaluate the model or save predictions):
-
-```bash
-python3 inference.py HYDRA_CONFIG_ARGUMENTS
+```
+python3 inference.py -cn=CONFIG_NAME HYDRA_CONFIG_ARGUMENTS  # for metrics
+python3 tech_eval.py  # for params, MACs and other technical metrics. Choose the model in tech_eval.yaml
 ```
 
-## Useful Links:
+use `from_pretrained` field in a `{model_name}.yaml` file to load the checkpoint you need from `checkpoints/{model_name}`.
 
-You may find the following links useful:
+## Results on VCTK+DEMAND dataset
 
-- [Report branch](https://github.com/Blinorot/pytorch_project_template/tree/report): Guidelines for writing a scientific report/paper (with an emphasis on DL projects).
 
-- [CLAIRE Template](https://github.com/CLAIRE-Labo/python-ml-research-template): additional template by [EPFL CLAIRE Laboratory](https://www.epfl.ch/labs/claire/) that can be combined with ours to enhance experiments reproducibility via [Docker](https://www.docker.com/).
+| Model         | Params (M) | MACs (G) | FLOPs (G) | PESQ | STOI | SI-SNR |
+|--------------|-----------:|---------:|----------:|-----:|-----:|-------:|
+| Original DFNet | 1.78      | 0.35     | 0.30      | 2.81 | 0.93 | 17.30  |
+| Our DFNet      | 1.69      | 0.51     | 0.33      | **2.31** | 0.92 | **17.02** |
+| FastDFNet      | 1.04      | 0.34     | **0.39**  | 2.24 | 0.92 | 16.78  |
+| Rebalanced-1   | 1.03      | 0.25     | 0.30      | 2.21 | 0.92 | 16.53  |
+| Rebalanced-2   | 1.09      | 0.21     | 0.27      | 2.17 | 0.92 | 16.77  |
+| Rebalanced-3   | 1.15      | **0.19** | 0.26      | 2.15 | 0.92 | 16.40  |
 
-- [Mamba](https://github.com/mamba-org/mamba) and [Poetry](https://python-poetry.org/): alternatives to [Conda](https://conda.io/projects/conda/en/latest/user-guide/getting-started.html) and [pip](https://pip.pypa.io/en/stable/installation/) package managers given above.
 
-- [Awesome README](https://github.com/matiassingers/awesome-readme): a list of awesome README files for inspiration. Check the basics [here](https://github.com/PurpleBooth/a-good-readme-template).
+Best values per column are highlighted in **bold**.
+Due to limited computational and storage resources, we did not evaluate our models on the DNS Challenge dataset.
 
-## Credits
+## Future work
 
-This repository is based on a heavily modified fork of [pytorch-template](https://github.com/victoresque/pytorch-template) and [asr_project_template](https://github.com/WrathOfGrapes/asr_project_template) repositories.
-
-## License
-
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENSE)
+- Benchmark on DNS Challenge dataset for better comparability with recent methods
+- Explore GAN-based training to improve perceptual quality (e.g., PESQ)
