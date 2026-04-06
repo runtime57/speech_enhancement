@@ -1,4 +1,4 @@
-# Multimodal System for Audio-Visual Deepfake Detection
+# Speech Enhancement Algorithms for Low-Resource Devices
 
 We investigate parameter-efficient modifications of DeepFilterNet by replacing GRU blocks with FastGRNN and exploring alternative convolutional designs. Our approach significantly reduces the model size while preserving comparable speech enhancement quality. See the paper for details.
 
