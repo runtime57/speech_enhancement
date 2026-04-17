@@ -53,5 +53,4 @@ def main():
         save_demo_spectrogram(audio_path, image_path)
         print(f"[OK] {image_path}")
 
-if __name__ == "__main__":
-    main()
+main()
