@@ -1,95 +1,87 @@
 * {
-    box-sizing: border-box;
-  }
-  
-  body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #f4f6f8;
-    color: #1f2937;
-  }
-  
-  .page {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 32px 20px 48px;
-  }
-  
-  h1 {
-    text-align: center;
-    margin-bottom: 28px;
-  }
-  
-  .top-panel,
-  .bottom-panel {
-    background: white;
-    border-radius: 18px;
-    padding: 20px;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
-    margin-bottom: 20px;
-  }
-  
-  .sample-selector {
-    margin-bottom: 18px;
-    font-size: 16px;
-  }
-  
-  .sample-selector select {
-    margin-left: 8px;
-    padding: 8px 10px;
-    font-size: 15px;
-    border-radius: 10px;
-    border: 1px solid #cbd5e1;
-  }
-  
-  .spectrogram-card {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-  }
-  
-  #spectrogram {
-    width: 100%;
-    max-width: 900px;
-    border-radius: 14px;
-    border: 1px solid #dbe2ea;
-    background: #eef2f7;
-  }
-  
-  .buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    justify-content: center;
-    margin-bottom: 20px;
-  }
-  
-  .variant-btn {
-    padding: 10px 18px;
-    border: none;
-    border-radius: 999px;
-    background: #e5e7eb;
-    color: #111827;
-    cursor: pointer;
-    font-size: 15px;
-    transition: 0.2s ease;
-  }
-  
-  .variant-btn:hover {
-    background: #d1d5db;
-  }
-  
-  .variant-btn.active {
-    background: #2563eb;
-    color: white;
-  }
-  
-  .player-card {
-    display: flex;
-    justify-content: center;
-  }
-  
-  #audioPlayer {
-    width: 100%;
-    max-width: 700px;
-  }
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  color: #1f2937;
+}
+
+.page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.sample-block {
+  background: white;
+  border-radius: 18px;
+  padding: 24px;
+  margin-bottom: 28px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+}
+
+.sample-block h2 {
+  margin-top: 0;
+  margin-bottom: 18px;
+}
+
+.spectrogram-card {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.spectrogram {
+  width: 100%;
+  max-width: 900px;
+  border-radius: 14px;
+  border: 1px solid #dbe2ea;
+  background: #eef2f7;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.variant-btn {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 999px;
+  background: #e5e7eb;
+  color: #111827;
+  cursor: pointer;
+  font-size: 15px;
+  transition: 0.2s ease;
+}
+
+.variant-btn:hover {
+  background: #d1d5db;
+}
+
+.variant-btn.active {
+  background: #2563eb;
+  color: white;
+}
+
+.player-card {
+  display: flex;
+  justify-content: center;
+}
+
+.audio-player {
+  width: 100%;
+  max-width: 700px;
+}
