@@ -8,76 +8,113 @@
 </head>
 <body>
   <div class="page">
-    <h1>Speech Enhancement Demo</h1>
+    <header class="hero">
+      <h1>Speech Enhancement Demo</h1>
+      <p>Compare noisy, clean, and enhanced outputs across multiple models.</p>
+    </header>
 
-    <div class="sample-block" data-sample="sample1">
-      <h2>sample1</h2>
+    <section class="samples">
 
-      <div class="spectrogram-card">
-        <img class="spectrogram" src="images/noisy/sample1.png" alt="Spectrogram for sample1" />
+      <div class="sample-card" data-sample="sample1">
+        <div class="sample-header">
+          <h2>Sample 1</h2>
+          <span class="sample-badge">Speech Example</span>
+        </div>
+
+        <div class="spectrogram-wrap">
+          <img class="spectrogram" src="images/noisy/sample1.png" alt="Spectrogram for sample1" />
+        </div>
+
+        <div class="buttons">
+          <button class="variant-btn active" data-variant="noisy">noisy</button>
+          <button class="variant-btn" data-variant="clean">clean</button>
+          <button class="variant-btn" data-variant="dfnet">dfnet</button>
+          <button class="variant-btn" data-variant="grnn">grnn</button>
+          <button class="variant-btn" data-variant="xdws_grnn">xdws+grnn</button>
+        </div>
+
+        <div class="player-shell">
+          <audio class="audio-element" src="audio/noisy/sample1.wav"></audio>
+
+          <button class="play-btn" type="button" aria-label="Play audio">▶</button>
+
+          <div class="progress-area">
+            <input class="progress" type="range" min="0" max="100" value="0" step="0.1" />
+            <div class="time-row">
+              <span class="current-time">0:00</span>
+              <span class="duration">0:00</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="buttons">
-        <button class="variant-btn active" data-variant="noisy">noisy</button>
-        <button class="variant-btn" data-variant="clean">clean</button>
-        <button class="variant-btn" data-variant="dfnet">dfnet</button>
-        <button class="variant-btn" data-variant="grnn">grnn</button>
-        <button class="variant-btn" data-variant="xdws+grnn">xdws+grnn</button>
+      <div class="sample-card" data-sample="sample2">
+        <div class="sample-header">
+          <h2>Sample 2</h2>
+          <span class="sample-badge">Speech Example</span>
+        </div>
+
+        <div class="spectrogram-wrap">
+          <img class="spectrogram" src="images/noisy/sample2.png" alt="Spectrogram for sample2" />
+        </div>
+
+        <div class="buttons">
+          <button class="variant-btn active" data-variant="noisy">noisy</button>
+          <button class="variant-btn" data-variant="clean">clean</button>
+          <button class="variant-btn" data-variant="dfnet">dfnet</button>
+          <button class="variant-btn" data-variant="grnn">grnn</button>
+          <button class="variant-btn" data-variant="xdws_grnn">xdws+grnn</button>
+        </div>
+
+        <div class="player-shell">
+          <audio class="audio-element" src="audio/noisy/sample2.wav"></audio>
+
+          <button class="play-btn" type="button" aria-label="Play audio">▶</button>
+
+          <div class="progress-area">
+            <input class="progress" type="range" min="0" max="100" value="0" step="0.1" />
+            <div class="time-row">
+              <span class="current-time">0:00</span>
+              <span class="duration">0:00</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="player-card">
-        <audio class="audio-player" controls>
-          <source class="audio-source" src="audio/noisy/sample1.wav" type="audio/wav" />
-          Your browser does not support the audio element.
-        </audio>
-      </div>
-    </div>
+      <div class="sample-card" data-sample="sample3">
+        <div class="sample-header">
+          <h2>Sample 3</h2>
+          <span class="sample-badge">Speech Example</span>
+        </div>
 
-    <div class="sample-block" data-sample="sample2">
-      <h2>sample2</h2>
+        <div class="spectrogram-wrap">
+          <img class="spectrogram" src="images/noisy/sample3.png" alt="Spectrogram for sample3" />
+        </div>
 
-      <div class="spectrogram-card">
-        <img class="spectrogram" src="images/noisy/sample2.png" alt="Spectrogram for sample2" />
-      </div>
+        <div class="buttons">
+          <button class="variant-btn active" data-variant="noisy">noisy</button>
+          <button class="variant-btn" data-variant="clean">clean</button>
+          <button class="variant-btn" data-variant="dfnet">dfnet</button>
+          <button class="variant-btn" data-variant="grnn">grnn</button>
+          <button class="variant-btn" data-variant="xdws_grnn">xdws+grnn</button>
+        </div>
 
-      <div class="buttons">
-        <button class="variant-btn active" data-variant="noisy">noisy</button>
-        <button class="variant-btn" data-variant="clean">clean</button>
-        <button class="variant-btn" data-variant="dfnet">dfnet</button>
-        <button class="variant-btn" data-variant="grnn">grnn</button>
-        <button class="variant-btn" data-variant="xdws+grnn">xdws+grnn</button>
-      </div>
+        <div class="player-shell">
+          <audio class="audio-element" src="audio/noisy/sample3.wav"></audio>
 
-      <div class="player-card">
-        <audio class="audio-player" controls>
-          <source class="audio-source" src="audio/noisy/sample2.wav" type="audio/wav" />
-          Your browser does not support the audio element.
-        </audio>
-      </div>
-    </div>
+          <button class="play-btn" type="button" aria-label="Play audio">▶</button>
 
-    <div class="sample-block" data-sample="sample3">
-      <h2>sample3</h2>
-
-      <div class="spectrogram-card">
-        <img class="spectrogram" src="images/noisy/sample3.png" alt="Spectrogram for sample3" />
+          <div class="progress-area">
+            <input class="progress" type="range" min="0" max="100" value="0" step="0.1" />
+            <div class="time-row">
+              <span class="current-time">0:00</span>
+              <span class="duration">0:00</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="buttons">
-        <button class="variant-btn active" data-variant="noisy">noisy</button>
-        <button class="variant-btn" data-variant="clean">clean</button>
-        <button class="variant-btn" data-variant="dfnet">dfnet</button>
-        <button class="variant-btn" data-variant="grnn">grnn</button>
-        <button class="variant-btn" data-variant="xdws+grnn">xdws+grnn</button>
-      </div>
-
-      <div class="player-card">
-        <audio class="audio-player" controls>
-          <source class="audio-source" src="audio/noisy/sample3.wav" type="audio/wav" />
-          Your browser does not support the audio element.
-        </audio>
-      </div>
-    </div>
+    </section>
   </div>
 
   <script>
@@ -102,27 +139,85 @@
       };
     }
 
-    const sampleBlocks = document.querySelectorAll(".sample-block");
+    function formatTime(seconds) {
+      if (!isFinite(seconds)) return "0:00";
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60).toString().padStart(2, "0");
+      return `${mins}:${secs}`;
+    }
 
-    sampleBlocks.forEach((block) => {
-      const sample = block.dataset.sample;
-      const spectrogram = block.querySelector(".spectrogram");
-      const audioPlayer = block.querySelector(".audio-player");
-      const audioSource = block.querySelector(".audio-source");
-      const buttons = block.querySelectorAll(".variant-btn");
+    const cards = document.querySelectorAll(".sample-card");
+
+    cards.forEach((card) => {
+      const sample = card.dataset.sample;
+      const spectrogram = card.querySelector(".spectrogram");
+      const buttons = card.querySelectorAll(".variant-btn");
+
+      const audio = card.querySelector(".audio-element");
+      const playBtn = card.querySelector(".play-btn");
+      const progress = card.querySelector(".progress");
+      const currentTimeEl = card.querySelector(".current-time");
+      const durationEl = card.querySelector(".duration");
+
+      let currentVariant = "noisy";
 
       buttons.forEach((button) => {
         button.addEventListener("click", () => {
           buttons.forEach((btn) => btn.classList.remove("active"));
           button.classList.add("active");
 
-          const variant = button.dataset.variant;
-          const paths = getPaths(sample, variant);
+          currentVariant = button.dataset.variant;
+          const paths = getPaths(sample, currentVariant);
 
+          const wasPlaying = !audio.paused;
+
+          audio.src = paths.audio;
           spectrogram.src = paths.image;
-          audioSource.src = paths.audio;
-          audioPlayer.load();
+
+          progress.value = 0;
+          currentTimeEl.textContent = "0:00";
+          durationEl.textContent = "0:00";
+          playBtn.textContent = "▶";
+
+          audio.load();
+
+          if (wasPlaying) {
+            audio.play();
+            playBtn.textContent = "❚❚";
+          }
         });
+      });
+
+      playBtn.addEventListener("click", () => {
+        if (audio.paused) {
+          audio.play();
+          playBtn.textContent = "❚❚";
+        } else {
+          audio.pause();
+          playBtn.textContent = "▶";
+        }
+      });
+
+      audio.addEventListener("loadedmetadata", () => {
+        durationEl.textContent = formatTime(audio.duration);
+      });
+
+      audio.addEventListener("timeupdate", () => {
+        if (audio.duration) {
+          progress.value = (audio.currentTime / audio.duration) * 100;
+        }
+        currentTimeEl.textContent = formatTime(audio.currentTime);
+      });
+
+      audio.addEventListener("ended", () => {
+        playBtn.textContent = "▶";
+        progress.value = 0;
+      });
+
+      progress.addEventListener("input", () => {
+        if (audio.duration) {
+          audio.currentTime = (progress.value / 100) * audio.duration;
+        }
       });
     });
   </script>
