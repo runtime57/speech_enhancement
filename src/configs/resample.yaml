@@ -1,0 +1,5 @@
+dirs: [
+  "demo/audio/noisy",
+  "demo/audio/clean"
+]
+sr: 16000

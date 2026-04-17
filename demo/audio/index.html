@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Speech Enhancement Demo</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page">
+    <h1>Speech Enhancement Demo</h1>
+
+    <div class="top-panel">
+      <div class="sample-selector">
+        <label for="sampleSelect">Sample:</label>
+        <select id="sampleSelect">
+          <option value="sample1">sample1</option>
+          <option value="sample2">sample2</option>
+        </select>
+      </div>
+
+      <div class="spectrogram-card">
+        <img id="spectrogram" src="images/noisy/sample1.png" alt="Spectrogram" />
+      </div>
+    </div>
+
+    <div class="bottom-panel">
+      <div class="buttons">
+        <button class="variant-btn active" data-variant="noisy">noisy</button>
+        <button class="variant-btn" data-variant="clean">clean</button>
+        <button class="variant-btn" data-variant="dfnet">dfnet</button>
+        <button class="variant-btn" data-variant="grnn">grnn</button>
+        <button class="variant-btn" data-variant="xdws+grnn">xdws+grnn</button>
+      </div>
+
+      <div class="player-card">
+        <audio id="audioPlayer" controls>
+          <source id="audioSource" src="audio/noisy/sample1.wav" type="audio/wav" />
+          Your browser does not support the audio element.
+        </audio>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const sampleSelect = document.getElementById("sampleSelect");
+    const spectrogram = document.getElementById("spectrogram");
+    const audioPlayer = document.getElementById("audioPlayer");
+    const audioSource = document.getElementById("audioSource");
+    const buttons = document.querySelectorAll(".variant-btn");
+
+    let currentVariant = "noisy";
+
+    function getPaths(sample, variant) {
+      if (variant === "noisy") {
+        return {
+          audio: `audio/noisy/${sample}.wav`,
+          image: `images/noisy/${sample}.png`
+        };
+      }
+
+      if (variant === "clean") {
+        return {
+          audio: `audio/clean/${sample}.wav`,
+          image: `images/clean/${sample}.png`
+        };
+      }
+
+      return {
+        audio: `audio/enhanced/${variant}/${sample}.wav`,
+        image: `images/enhanced/${variant}/${sample}.png`
+      };
+    }
+
+    function updateDemo() {
+      const sample = sampleSelect.value;
+      const paths = getPaths(sample, currentVariant);
+
+      spectrogram.src = paths.image;
+      audioSource.src = paths.audio;
+      audioPlayer.load();
+    }
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        buttons.forEach((btn) => btn.classList.remove("active"));
+        button.classList.add("active");
+        currentVariant = button.dataset.variant;
+        updateDemo();
+      });
+    });
+
+    sampleSelect.addEventListener("change", updateDemo);
+  </script>
+</body>
+</html>

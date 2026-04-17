@@ -1,11 +1,11 @@
 defaults:
-  - model: deepfilternetgrnn
+  - model: deepfilternet
   - _self_
 
 denoise:
   noisy_dir: "demo/audio/noisy"
-  output_dir: "demo/audio/enhanced"
-  from_pretrained: "models/model_best.pth"
+  output_dir: "demo/audio/enhanced/dfnet"
+  from_pretrained: "models/dfnet.pth"
   device: auto
   seed: 1
 
