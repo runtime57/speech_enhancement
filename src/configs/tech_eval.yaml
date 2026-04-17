@@ -1,5 +1,5 @@
 defaults:
-  - model: rebalanced3grnn.yaml
+  - model: xdws.yaml
   - datasets: onebatch
   - dataloader: onebatch
   - transforms: example
