@@ -1,7 +1,16 @@
 # Speech Enhancement Algorithms for Low-Resource Devices
 
-We investigate parameter-efficient modifications of DeepFilterNet by replacing GRU blocks with FastGRNN and exploring alternative convolutional designs. Our approach significantly reduces the model size while preserving comparable speech enhancement quality. See the paper for details.
+We investigate parameter-efficient modifications of DeepFilterNet by replacing GRU blocks with FastGRNN and exploring alternative convolutional designs. Our approach significantly reduces the model size while preserving comparable speech enhancement quality. See the [paper](https://github.com/runtime57/speech_enhancement/blob/main/paper/SpeechEnhancementAlgorithmsForLowResourceDevices.pdf) for details.
 
+![DeepFilterNet illustration](paper/graphics/full_colored.png)
+
+## Audio Samples
+
+We provide an interactive demo with qualitative comparisons between the noisy signal, the original DeepFilterNet, and our proposed lightweight models.
+
+Access the demo page [here](https://runtime57.github.io/speech_enhancement/).
+
+All the source code for demo page can be found in `demo` branch.
 
 ## Installation
 
@@ -55,14 +64,20 @@ use `from_pretrained` field in a `{model_name}.yaml` file to load the checkpoint
 ## Results on VCTK+DEMAND dataset
 
 
-| Model         | Params (M) | MACs (G) | FLOPs (G) | PESQ | STOI | SI-SNR |
-|--------------|-----------:|---------:|----------:|-----:|-----:|-------:|
-| Original DFNet | 1.78      | 0.35     | 0.30      | 2.81 | 0.93 | 17.30  |
-| Our DFNet      | 1.69      | 0.51     | 0.33      | **2.31** | 0.92 | **17.02** |
-| FastDFNet      | 1.04      | 0.34     | **0.39**  | 2.24 | 0.92 | 16.78  |
-| Rebalanced-1   | 1.03      | 0.25     | 0.30      | 2.21 | 0.92 | 16.53  |
-| Rebalanced-2   | 1.09      | 0.21     | 0.27      | 2.17 | 0.92 | 16.77  |
-| Rebalanced-3   | 1.15      | **0.19** | 0.26      | 2.15 | 0.92 | 16.40  |
+| Model           | Params (M) | MACs (G) | PESQ    | STOI    | SI-SDR   |
+|----------------|-----------:|---------:|--------:|--------:|---------:|
+| Original DFNet | 1.78       | 0.35     | **2.81** | **0.94** | 16.63    |
+| Our DFNet      | 1.69       | 0.51     | 2.31    | 0.93    | **17.04** |
+| FastDFNet      | 1.04       | 0.34     | 2.26    | 0.93    | 17.00    |
+| Rebalanced-1   | **1.03**   | 0.25     | 2.21    | 0.92    | 16.53    |
+| Rebalanced-2   | 1.09       | 0.21     | 2.24    | 0.92    | 16.83    |
+| Rebalanced-3   | 1.15       | **0.19** | 2.16    | 0.92    | 16.49    |
+| DWS            | 1.04       | 0.32     | 2.25    | 0.93    | 16.86    |
+| MB             | 1.08       | 0.52     | 2.24    | 0.93    | 16.96    |
+| Conv           | 1.11       | 0.68     | 2.25    | 0.93    | 16.97    |
+| XDWS           | 1.11       | 0.32     | 2.24    | 0.92    | 16.71    |
+| XMB            | 1.17       | 0.50     | 2.25    | 0.93    | 16.79    |
+| XConv          | 1.12       | 0.68     | 2.26    | 0.93    | 16.77    |
 
 
 Best values per column are highlighted in **bold**.
