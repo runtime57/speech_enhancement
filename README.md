@@ -59,7 +59,7 @@ python3 inference.py -cn=CONFIG_NAME HYDRA_CONFIG_ARGUMENTS  # for metrics
 python3 tech_eval.py  # for params, MACs and other technical metrics. Choose the model in tech_eval.yaml
 ```
 
-use `from_pretrained` field in a `{model_name}.yaml` file to load the checkpoint you need from `checkpoints/{model_name}`.
+use `from_pretrained` field in a `{model_name}.yaml` file to load the checkpoint you need from `models/{model_name}`.
 
 ## Results on VCTK+DEMAND dataset
 
