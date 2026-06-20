@@ -13,7 +13,7 @@ from src.metrics.efficiency import (
 )
 from src.trainer.base_trainer import BaseTrainer
 from src.utils.config_utils import stft_config
-from src.utils.df_utils import exp_unit_norm
+from src.utils.df_utils import audio_lengths_to_frame_lengths, exp_unit_norm, stft_with_df_config
 from src.utils.erb_utils import compute_erb_feats_from_stft
 
 
@@ -62,22 +62,14 @@ class TechEvaluator(BaseTrainer):
 
     def _prepare_batch_for_model(self, batch):
         batch = self.move_batch_to_device(batch)
+        if "lengths" in batch:
+            batch["lengths"] = batch["lengths"].to(self.device)
         batch = self.transform_batch(batch)
 
         p = stft_config()
 
-        clean_stft = torch.stft(
-            batch["clean"],
-            n_fft=p.fft_size,
-            hop_length=p.hop_length,
-            return_complex=False,
-        )
-        noisy_stft = torch.stft(
-            batch["noisy"],
-            n_fft=p.fft_size,
-            hop_length=p.hop_length,
-            return_complex=False,
-        )
+        clean_stft = stft_with_df_config(batch["clean"])
+        noisy_stft = stft_with_df_config(batch["noisy"])
 
         def to_spec(x):
             return x.unsqueeze(1).permute(0, 1, 3, 2, 4).contiguous()
@@ -85,10 +77,11 @@ class TechEvaluator(BaseTrainer):
         clean_spec = to_spec(clean_stft)
         noisy_spec = to_spec(noisy_stft)
 
-        feat_erb = compute_erb_feats_from_stft(noisy_stft)
+        frame_lengths = audio_lengths_to_frame_lengths(batch["lengths"], p.fft_size, p.hop_length)
+        feat_erb = compute_erb_feats_from_stft(noisy_stft, lengths_frames=frame_lengths)
 
         feat_spec = noisy_spec[:, :, :, : p.nb_df, :]
-        feat_spec, _ = exp_unit_norm(feat_spec)
+        feat_spec, _ = exp_unit_norm(feat_spec, lengths=frame_lengths)
 
         batch.update(
             {

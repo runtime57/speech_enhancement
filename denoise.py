@@ -7,7 +7,12 @@ from hydra.utils import instantiate, to_absolute_path
 from omegaconf import OmegaConf
 
 from src.utils.config_utils import setup_config, stft_config
-from src.utils.df_utils import as_complex, exp_unit_norm
+from src.utils.df_utils import (
+    audio_lengths_to_frame_lengths,
+    exp_unit_norm,
+    istft_with_df_config,
+    stft_with_df_config,
+)
 from src.utils.erb_utils import compute_erb_feats_from_stft
 from src.utils.init_utils import set_random_seed
 from src.utils.io_utils import safe_torchaudio_load, safe_torchaudio_save
@@ -69,31 +74,28 @@ def _list_audio_files(directory: Path) -> list[Path]:
 def _denoise_waveform(model: torch.nn.Module, noisy: torch.Tensor) -> torch.Tensor:
     p = stft_config()
 
-    noisy_stft = torch.stft(
-        noisy,
-        n_fft=int(p.fft_size),
-        hop_length=int(p.hop_length),
-        return_complex=False,
-    )  # [B,F,T,2]
+    noisy_stft = stft_with_df_config(noisy)  # [B,F,T,2]
 
     def to_spec(x: torch.Tensor) -> torch.Tensor:
         return x.unsqueeze(1).permute(0, 1, 3, 2, 4).contiguous()  # [B,1,T,F,2]
 
     noisy_spec = to_spec(noisy_stft)
-    feat_erb = compute_erb_feats_from_stft(noisy_stft)
+    lengths = torch.full(
+        (noisy.shape[0],),
+        noisy.shape[-1],
+        device=noisy.device,
+        dtype=torch.long,
+    )
+    frame_lengths = audio_lengths_to_frame_lengths(lengths, int(p.fft_size), int(p.hop_length))
+    feat_erb = compute_erb_feats_from_stft(noisy_stft, lengths_frames=frame_lengths)
 
     feat_spec = noisy_spec[:, :, :, : int(p.nb_df), :]
-    feat_spec, _ = exp_unit_norm(feat_spec)
+    feat_spec, _ = exp_unit_norm(feat_spec, lengths=frame_lengths)
 
     enh, *_ = model(spec=noisy_spec, feat_erb=feat_erb, feat_spec=feat_spec)
 
     enh_spec = enh.squeeze(1).permute(0, 2, 1, 3).contiguous()  # [B,F,T,2]
-    enh_wav = torch.istft(
-        as_complex(enh_spec),
-        n_fft=int(p.fft_size),
-        hop_length=int(p.hop_length),
-        length=noisy.shape[-1],
-    )
+    enh_wav = istft_with_df_config(enh_spec, length=noisy.shape[-1])
     return enh_wav
 
 

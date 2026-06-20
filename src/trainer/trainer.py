@@ -3,7 +3,12 @@ import torch
 from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
 from src.utils.config_utils import stft_config
-from src.utils.df_utils import as_complex, exp_unit_norm
+from src.utils.df_utils import (
+    audio_lengths_to_frame_lengths,
+    exp_unit_norm,
+    istft_with_df_config,
+    stft_with_df_config,
+)
 from src.utils.erb_utils import compute_erb_feats_from_stft
 
 class Trainer(BaseTrainer):
@@ -31,6 +36,8 @@ class Trainer(BaseTrainer):
                 model outputs, and losses.
         """
         batch = self.move_batch_to_device(batch)
+        if "lengths" in batch:
+            batch["lengths"] = batch["lengths"].to(self.device)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
 
         metric_funcs = self.metrics["inference"]
@@ -39,18 +46,8 @@ class Trainer(BaseTrainer):
             self.optimizer.zero_grad()
 
         p = stft_config()
-        clean_stft = torch.stft(
-            batch["clean"],
-            n_fft=p.fft_size,
-            hop_length=p.hop_length,
-            return_complex=False,
-        )  # [B, F, T, 2]
-        noisy_stft = torch.stft(
-            batch["noisy"],
-            n_fft=p.fft_size,
-            hop_length=p.hop_length,
-            return_complex=False,
-        )  # [B, F, T, 2]
+        clean_stft = stft_with_df_config(batch["clean"])  # [B, F, T, 2]
+        noisy_stft = stft_with_df_config(batch["noisy"])  # [B, F, T, 2]
 
         # reshape to model convention [B, 1, T, F, 2]
         def to_spec(x):
@@ -59,10 +56,11 @@ class Trainer(BaseTrainer):
         clean_spec = to_spec(clean_stft)
         noisy_spec = to_spec(noisy_stft)
 
-        feat_erb = compute_erb_feats_from_stft(noisy_stft)
+        frame_lengths = audio_lengths_to_frame_lengths(batch["lengths"], p.fft_size, p.hop_length)
+        feat_erb = compute_erb_feats_from_stft(noisy_stft, lengths_frames=frame_lengths)
 
         feat_spec = noisy_spec[:, :, :, : p.nb_df, :]
-        feat_spec, _ = exp_unit_norm(feat_spec)
+        feat_spec, _ = exp_unit_norm(feat_spec, lengths=frame_lengths)
 
 
         enh, m, lsnr, df_alpha = self.model(
@@ -86,12 +84,7 @@ class Trainer(BaseTrainer):
         # enh: [B, 1, T, F, 2] -> istft expects [B, F, T] complex
         def spec_to_waveform(spec: torch.Tensor, length: int) -> torch.Tensor:
             spec = spec.squeeze(1).permute(0, 2, 1, 3).contiguous()  # [B, F, T, 2]
-            return torch.istft(
-                as_complex(spec),
-                n_fft=p.fft_size,
-                hop_length=p.hop_length,
-                length=length,
-            )
+            return istft_with_df_config(spec, length=length)
 
         loss_on_waveform = bool(self.cfg_trainer.get("loss_on_waveform", False))
         enh_wav = spec_to_waveform(

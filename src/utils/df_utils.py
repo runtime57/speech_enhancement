@@ -127,19 +127,51 @@ def exp_unit_norm(
     for t in range(T):
         re = y[:, :, t, :, 0]                # [B,C,F]
         im = y[:, :, t, :, 1]
-        mag2 = re * re + im * im             # |X|^2
+        mag = torch.sqrt(re * re + im * im + eps)
 
         if valid_t is None:
-            state = alpha * state + (1 - alpha) * mag2
+            state = alpha * state + (1 - alpha) * mag
         else:
             v = valid_t[:, t].view(B, 1, 1)  # [B,1,1]
-            state = torch.where(v, alpha * state + (1 - alpha) * mag2, state)
+            state = torch.where(v, alpha * state + (1 - alpha) * mag, state)
 
         inv = torch.rsqrt(state + eps)
         y[:, :, t, :, 0] = re * inv
         y[:, :, t, :, 1] = im * inv
 
     return y, state
+
+
+def audio_lengths_to_frame_lengths(lengths: Tensor, fft_size: int, hop_length: int) -> Tensor:
+    if lengths.dim() != 1:
+        raise ValueError(f"Expected waveform lengths as [B], got {tuple(lengths.shape)}")
+    return torch.div(lengths, hop_length, rounding_mode="floor") + 1
+
+
+def stft_with_df_config(audio: Tensor) -> Tensor:
+    p = stft_config()
+    window = torch.hann_window(p.fft_size, device=audio.device, dtype=audio.dtype)
+    return torch.stft(
+        audio,
+        n_fft=p.fft_size,
+        hop_length=p.hop_length,
+        window=window,
+        normalized=True,
+        return_complex=False,
+    )
+
+
+def istft_with_df_config(spec: Tensor, length: Optional[int] = None) -> Tensor:
+    p = stft_config()
+    window = torch.hann_window(p.fft_size, device=spec.device, dtype=spec.real.dtype)
+    return torch.istft(
+        as_complex(spec),
+        n_fft=p.fft_size,
+        hop_length=p.hop_length,
+        window=window,
+        normalized=True,
+        length=length,
+    )
 
 
 def _calculate_norm_alpha(sr: int, hop_length: int, tau: float):
