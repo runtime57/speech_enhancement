@@ -19,6 +19,13 @@ class SI_SDR(BaseMetric):
             separated_audio = separated_audio.unsqueeze(1)
         if audio_target.dim() == 2:
             audio_target = audio_target.unsqueeze(1)
-
-        si_sdr = self.metric(separated_audio, audio_target)
+        lengths = kwargs.get("lengths")
+        if lengths is None:
+            si_sdr = self.metric(separated_audio, audio_target)
+            return torch.mean(si_sdr).item()
+        scores = []
+        for pred, target, length in zip(separated_audio, audio_target, lengths):
+            n = int(length.item())
+            scores.append(self.metric(pred[..., :n], target[..., :n]))
+        si_sdr = torch.stack(scores)
         return torch.mean(si_sdr).item()

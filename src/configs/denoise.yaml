@@ -1,11 +1,11 @@
 defaults:
-  - model: rebalancedgrnn
+  - model: deepfilternet
   - _self_
 
 denoise:
-  noisy_dir: "audio/noisy"
-  output_dir: "audio/enhanced/rebalanced"
-  from_pretrained: "models/rebalanced_1.pth"
+  noisy_dir: "demo/audio/noisy"
+  output_dir: "demo/audio/enhanced/dfnet"
+  from_pretrained: "models/dfnet.pth"
   device: auto
   seed: 1
 

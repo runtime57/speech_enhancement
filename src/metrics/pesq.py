@@ -19,5 +19,11 @@ class PESQ(BaseMetric):
             separated_audio = separated_audio.squeeze(1)
         if audio_target.dim() == 3:
             audio_target = audio_target.squeeze(1)
-
-        return torch.mean(self.metric(separated_audio, audio_target)).item()
+        lengths = kwargs.get("lengths")
+        if lengths is None:
+            return torch.mean(self.metric(separated_audio, audio_target)).item()
+        scores = []
+        for pred, target, length in zip(separated_audio, audio_target, lengths):
+            n = int(length.item())
+            scores.append(self.metric(pred[:n].unsqueeze(0), target[:n].unsqueeze(0)))
+        return torch.mean(torch.stack(scores)).item()

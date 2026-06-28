@@ -209,6 +209,7 @@ class BaseTrainer:
                 batch = self.process_batch(
                     batch,
                     metrics=self.train_metrics,
+                    step=batch_idx
                 )
             except torch.cuda.OutOfMemoryError as e:
                 if self.skip_oom:
@@ -272,6 +273,7 @@ class BaseTrainer:
                 batch = self.process_batch(
                     batch,
                     metrics=self.evaluation_metrics,
+                    step=None
                 )
             self.writer.set_step(epoch * self.epoch_len, part)
             self._log_scalars(self.evaluation_metrics)
