@@ -1,5 +1,5 @@
 defaults:
-  - model: xdws.yaml
+  - model: deepfilternetgrnn.yaml
   - datasets: onebatch
   - dataloader: onebatch
   - transforms: example

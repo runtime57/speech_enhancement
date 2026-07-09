@@ -1,1 +1,2 @@
 _target_: src.model.DfNetGRNN
+mask_pf: true

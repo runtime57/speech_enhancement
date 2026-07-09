@@ -15,12 +15,16 @@ lr_scheduler:
   step_size: ${trainer.epoch_len}
 loss_function:
   _target_: src.loss.Loss
+  mask_factor: 1.0
   spec_factor_magnitude: 20000
   spec_factor_complex: 20000
   spec_gamma: 0.6
+  mr_factor: 0.5
+  mr_factor_complex: 0.5
+  sdr_factor: 0.1
   # keep only Eq. (8): L = λ_spec * L_spec + λ_α * L_α
   lsnr_factor: 0.0
-  alpha_factor: 1.0
+  alpha_factor: 2.0
   alpha_lsnr_low: -10.0
   alpha_lsnr_high: -5.0
   mask_f_under: 1
@@ -32,7 +36,7 @@ trainer:
   resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
   device: auto # device name or "auto"
   override: True # if True, will override the previous run with the same name
-  monitor: "max test_SI_SNR" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric
+  monitor: "max test_PESQ" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric
   save_period: 5 # checkpoint each save_period epochs in addition to the best epoch
   early_stop: ${trainer.n_epochs} # epochs for early stopping
   save_dir: "saved"

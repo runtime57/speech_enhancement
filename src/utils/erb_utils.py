@@ -283,21 +283,21 @@ def compute_erb_feats_from_stft(
     logp = torch.log(power + eps)
     logp = logp.permute(0, 2, 1).contiguous()
 
+    # exp mean norm (decay=1s by default)
+    logp_norm = exp_mean_norm_torch(
+        logp, hop_length=hop_length, sr=sr, decay_sec=decay_sec, lengths=lengths_frames
+    )
+
     # ERB FB
     fb = make_erb_fb_matrix_torch(
         sr, fft_size, nb_erb, min_nb_freqs,
         normalize=fb_normalize,
-        device=logp.device,
-        dtype=logp.dtype,
+        device=logp_norm.device,
+        dtype=logp_norm.dtype,
     )  # [Fe,F]
 
     # apply: [B,T,F] @ [F,Fe] = [B,T,Fe]
-    erb_feats = torch.matmul(logp, fb.t())
-
-    # exp mean norm (decay=1s by default)
-    erb_feats = exp_mean_norm_torch(
-        erb_feats, hop_length=hop_length, sr=sr, decay_sec=decay_sec, lengths=lengths_frames
-    )
+    erb_feats = torch.matmul(logp_norm, fb.t())
 
     # encoder expects [B,1,T,Fe]
     return erb_feats.unsqueeze(1)

@@ -5,3 +5,4 @@ emb_hidden_dim: 512
 emb_num_layers: 3
 df_hidden_dim: 640
 df_num_layers: 2
+mask_pf: true

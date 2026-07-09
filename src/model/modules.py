@@ -12,7 +12,7 @@ from torch.nn import init
 from torch.nn.parameter import Parameter
 from typing_extensions import Final
 
-from src.model.comfifastgrnn import ComfiFastGRNN as FastGRNN, gen_non_linearity
+from src.model.comfifastgrnn import gen_non_linearity
 from src.utils.config_utils import stft_config
 
 from src.utils.df_utils import as_complex, as_real, get_norm_alpha
@@ -724,25 +724,58 @@ class GroupedGRNNLayer(nn.Module):
         self.update_non_linearity = update_non_linearity
         self.w_rank = w_rank
         self.u_rank = u_rank
-        self.layers = nn.ModuleList(
-            FastGRNN(
-                input_size=self.input_size,
-                hidden_size=self.hidden_size,
-                num_layers=1,
-                batch_first=batch_first,
-                dropout=dropout,
-                bidirectional=bidirectional,
-                gate_non_linearity=gate_non_linearity,
-                update_non_linearity=update_non_linearity,
-                w_rank=w_rank,
-                u_rank=u_rank,
-                zeta_init=zeta_init,
-                nu_init=nu_init,
-                lambda_init=lambda_init,
-                gamma_init=gamma_init,
-            )
-            for _ in range(groups)
+        self._init_grouped_fastgrnn_params(
+            zeta_init=zeta_init,
+            nu_init=nu_init,
+            lambda_init=lambda_init,
+            gamma_init=gamma_init,
         )
+
+    def _init_grouped_fastgrnn_params(
+        self,
+        zeta_init: float,
+        nu_init: float,
+        lambda_init: float,
+        gamma_init: float,
+    ) -> None:
+        shape_gh = (self.num_directions, self.groups, self.hidden_size)
+        shape_g1 = (self.num_directions, self.groups, 1)
+        if self.w_rank is None:
+            self.w = nn.Parameter(
+                torch.randn(
+                    self.num_directions, self.groups, self.input_size, self.hidden_size
+                )
+                * 0.1
+            )
+        else:
+            self.w1 = nn.Parameter(
+                torch.randn(self.num_directions, self.groups, self.input_size, self.w_rank) * 0.1
+            )
+            self.w2 = nn.Parameter(
+                torch.randn(self.num_directions, self.groups, self.w_rank, self.hidden_size) * 0.1
+            )
+
+        if self.u_rank is None:
+            self.u = nn.Parameter(
+                torch.randn(
+                    self.num_directions, self.groups, self.hidden_size, self.hidden_size
+                )
+                * 0.1
+            )
+        else:
+            self.u1 = nn.Parameter(
+                torch.randn(self.num_directions, self.groups, self.hidden_size, self.u_rank) * 0.1
+            )
+            self.u2 = nn.Parameter(
+                torch.randn(self.num_directions, self.groups, self.u_rank, self.hidden_size) * 0.1
+            )
+
+        self.bias_gate = nn.Parameter(torch.ones(shape_gh))
+        self.bias_update = nn.Parameter(torch.ones(shape_gh))
+        self.zeta = nn.Parameter(torch.full(shape_g1, zeta_init, dtype=torch.float32))
+        self.nu = nn.Parameter(torch.full(shape_g1, nu_init, dtype=torch.float32))
+        self.lambd = nn.Parameter(torch.full(shape_g1, lambda_init, dtype=torch.float32))
+        self.gamma = nn.Parameter(torch.full(shape_g1, gamma_init, dtype=torch.float32))
 
     def flatten_parameters(self):
         # FastGRNN is implemented from cells, so there are no packed RNN parameters to flatten.
@@ -756,63 +789,59 @@ class GroupedGRNNLayer(nn.Module):
             device=device,
         )
 
-    def _stack_direction_params(self, forward: bool = True) -> dict[str, Tensor]:
-        cells = []
-        for layer in self.layers:
-            if forward:
-                cells.append(layer.cells_fwd[0])
-            else:
-                assert layer.cells_bwd is not None
-                cells.append(layer.cells_bwd[0])
+    def _direction_index(self, forward: bool) -> int:
+        if forward:
+            return 0
+        if not self.bidirectional:
+            raise ValueError("Backward direction requested for unidirectional GroupedGRNNLayer.")
+        return 1
 
+    def _select_direction_params(self, forward: bool = True) -> dict[str, Tensor]:
+        d = self._direction_index(forward)
         params = {
-            "bias_gate": torch.stack([cell.bias_gate.squeeze(0) for cell in cells], dim=0),
-            "bias_update": torch.stack([cell.bias_update.squeeze(0) for cell in cells], dim=0),
-            "zeta": torch.stack([cell.zeta.view(1) for cell in cells], dim=0),
-            "nu": torch.stack([cell.nu.view(1) for cell in cells], dim=0),
-            "lambd": torch.stack([cell.lambd.view(1) for cell in cells], dim=0),
-            "gamma": torch.stack([cell.gamma.view(1) for cell in cells], dim=0),
+            "bias_gate": self.bias_gate[d].unsqueeze(0),
+            "bias_update": self.bias_update[d].unsqueeze(0),
+            "zeta": torch.sigmoid(self.zeta[d]).unsqueeze(0),
+            "nu": torch.sigmoid(self.nu[d]).unsqueeze(0),
+            "lambd": self.lambd[d].unsqueeze(0),
+            "gamma": torch.clamp(self.gamma[d], 0.0, 1.0).unsqueeze(0),
         }
-
         if self.w_rank is None:
-            params["w"] = torch.stack([cell.w_matrix for cell in cells], dim=0)
+            params["w"] = self.w[d]
         else:
-            params["w1"] = torch.stack([cell.w_matrix_1 for cell in cells], dim=0)
-            params["w2"] = torch.stack([cell.w_matrix_2 for cell in cells], dim=0)
-
+            params["w1"] = self.w1[d]
+            params["w2"] = self.w2[d]
         if self.u_rank is None:
-            params["u"] = torch.stack([cell.u_matrix for cell in cells], dim=0)
+            params["u"] = self.u[d]
         else:
-            params["u1"] = torch.stack([cell.u_matrix_1 for cell in cells], dim=0)
-            params["u2"] = torch.stack([cell.u_matrix_2 for cell in cells], dim=0)
-
+            params["u1"] = self.u1[d]
+            params["u2"] = self.u2[d]
         return params
+
+    def _project_input(self, x_t: Tensor, params: dict[str, Tensor]) -> Tensor:
+        if self.w_rank is None:
+            return torch.bmm(x_t.transpose(0, 1), params["w"]).transpose(0, 1)
+        w_proj = torch.bmm(x_t.transpose(0, 1), params["w1"]).transpose(0, 1)
+        return torch.bmm(w_proj.transpose(0, 1), params["w2"]).transpose(0, 1)
+
+    def _project_hidden(self, h_prev: Tensor, params: dict[str, Tensor]) -> Tensor:
+        if self.u_rank is None:
+            return torch.bmm(h_prev.transpose(0, 1), params["u"]).transpose(0, 1)
+        u_proj = torch.bmm(h_prev.transpose(0, 1), params["u1"]).transpose(0, 1)
+        return torch.bmm(u_proj.transpose(0, 1), params["u2"]).transpose(0, 1)
 
     def _grouped_step(self, x_t: Tensor, h_prev: Tensor, params: dict[str, Tensor]) -> Tensor:
         # x_t: [B, G, I/G], h_prev: [B, G, H/G]
-        if self.w_rank is None:
-            w_proj = torch.einsum("bgi,gih->bgh", x_t, params["w"])
-        else:
-            w_proj = torch.einsum("bgi,gir->bgr", x_t, params["w1"])
-            w_proj = torch.einsum("bgr,grh->bgh", w_proj, params["w2"])
+        preact = self._project_input(x_t, params) + self._project_hidden(h_prev, params)
+        z = gen_non_linearity(preact + params["bias_gate"], self.gate_non_linearity)
+        h_hat = gen_non_linearity(preact + params["bias_update"], self.update_non_linearity)
 
-        if self.u_rank is None:
-            u_proj = torch.einsum("bgh,ghk->bgk", h_prev, params["u"])
-        else:
-            u_proj = torch.einsum("bgh,ghr->bgr", h_prev, params["u1"])
-            u_proj = torch.einsum("bgr,grh->bgh", u_proj, params["u2"])
-
-        bias_gate = params["bias_gate"].unsqueeze(0)
-        bias_update = params["bias_update"].unsqueeze(0)
-        z = gen_non_linearity(w_proj + u_proj + bias_gate, self.gate_non_linearity)
-        h_hat = gen_non_linearity(w_proj + u_proj + bias_update, self.update_non_linearity)
-
-        zeta = torch.sigmoid(params["zeta"]).view(1, self.groups, 1)
-        nu = torch.sigmoid(params["nu"]).view(1, self.groups, 1)
+        zeta = params["zeta"]
+        nu = params["nu"]
         h = z * h_prev + (zeta * (1 - z) + nu) * h_hat
 
-        gamma = torch.clamp(params["gamma"], 0.0, 1.0).view(1, self.groups, 1)
-        lambd = params["lambd"].view(1, self.groups, 1)
+        gamma = params["gamma"]
+        lambd = params["lambd"]
         return gamma * h + (1 - gamma) * lambd
 
     def _run_direction(
@@ -852,13 +881,13 @@ class GroupedGRNNLayer(nn.Module):
             .contiguous()
         )
 
-        fw_params = self._stack_direction_params(forward=True)
+        fw_params = self._select_direction_params(forward=True)
         fw_out, h_fw = self._run_direction(grouped_input, grouped_state[0].detach(), fw_params)
 
         outputs = [fw_out]
         outstates = [h_fw]
         if self.bidirectional:
-            bw_params = self._stack_direction_params(forward=False)
+            bw_params = self._select_direction_params(forward=False)
             bw_out, h_bw = self._run_direction(
                 grouped_input, grouped_state[1].detach(), bw_params, reverse=True
             )
@@ -872,6 +901,93 @@ class GroupedGRNNLayer(nn.Module):
         if transposed:
             output = output.transpose(0, 1)
         return output, h
+
+    def _load_from_state_dict(
+        self,
+        state_dict,
+        prefix,
+        local_metadata,
+        strict,
+        missing_keys,
+        unexpected_keys,
+        error_msgs,
+    ):
+        legacy_probe = f"{prefix}layers.0.cells_fwd.0.bias_gate"
+        if legacy_probe in state_dict:
+            self._upgrade_legacy_state_dict(state_dict, prefix)
+        super()._load_from_state_dict(
+            state_dict,
+            prefix,
+            local_metadata,
+            strict,
+            missing_keys,
+            unexpected_keys,
+            error_msgs,
+        )
+
+    def _upgrade_legacy_state_dict(self, state_dict, prefix: str) -> None:
+        def cell_prefix(group: int, direction: str) -> str:
+            base = f"{prefix}layers.{group}."
+            if direction == "fwd":
+                return base + "cells_fwd.0."
+            return base + "cells_bwd.0."
+
+        def collect(name: str, direction: str) -> list[Tensor]:
+            return [state_dict.pop(cell_prefix(g, direction) + name) for g in range(self.groups)]
+
+        directions = ["fwd"] + (["bwd"] if self.bidirectional else [])
+        bias_gate = self.bias_gate.detach().clone()
+        bias_update = self.bias_update.detach().clone()
+        zeta = self.zeta.detach().clone()
+        nu = self.nu.detach().clone()
+        lambd = self.lambd.detach().clone()
+        gamma = self.gamma.detach().clone()
+
+        if self.w_rank is None:
+            w = self.w.detach().clone()
+        else:
+            w1 = self.w1.detach().clone()
+            w2 = self.w2.detach().clone()
+        if self.u_rank is None:
+            u = self.u.detach().clone()
+        else:
+            u1 = self.u1.detach().clone()
+            u2 = self.u2.detach().clone()
+
+        for dir_idx, direction in enumerate(directions):
+            bias_gate[dir_idx] = torch.stack(collect("bias_gate", direction), dim=0).squeeze(1)
+            bias_update[dir_idx] = torch.stack(collect("bias_update", direction), dim=0).squeeze(1)
+            zeta[dir_idx] = torch.stack(collect("zeta", direction), dim=0).view(self.groups, 1)
+            nu[dir_idx] = torch.stack(collect("nu", direction), dim=0).view(self.groups, 1)
+            lambd[dir_idx] = torch.stack(collect("lambd", direction), dim=0).view(self.groups, 1)
+            gamma[dir_idx] = torch.stack(collect("gamma", direction), dim=0).view(self.groups, 1)
+            if self.w_rank is None:
+                w[dir_idx] = torch.stack(collect("w_matrix", direction), dim=0)
+            else:
+                w1[dir_idx] = torch.stack(collect("w_matrix_1", direction), dim=0)
+                w2[dir_idx] = torch.stack(collect("w_matrix_2", direction), dim=0)
+            if self.u_rank is None:
+                u[dir_idx] = torch.stack(collect("u_matrix", direction), dim=0)
+            else:
+                u1[dir_idx] = torch.stack(collect("u_matrix_1", direction), dim=0)
+                u2[dir_idx] = torch.stack(collect("u_matrix_2", direction), dim=0)
+
+        state_dict[f"{prefix}bias_gate"] = bias_gate
+        state_dict[f"{prefix}bias_update"] = bias_update
+        state_dict[f"{prefix}zeta"] = zeta
+        state_dict[f"{prefix}nu"] = nu
+        state_dict[f"{prefix}lambd"] = lambd
+        state_dict[f"{prefix}gamma"] = gamma
+        if self.w_rank is None:
+            state_dict[f"{prefix}w"] = w
+        else:
+            state_dict[f"{prefix}w1"] = w1
+            state_dict[f"{prefix}w2"] = w2
+        if self.u_rank is None:
+            state_dict[f"{prefix}u"] = u
+        else:
+            state_dict[f"{prefix}u1"] = u1
+            state_dict[f"{prefix}u2"] = u2
 
 
 class GroupedGRNN(nn.Module):

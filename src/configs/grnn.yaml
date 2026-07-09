@@ -15,12 +15,16 @@ lr_scheduler:
   step_size: ${trainer.epoch_len}
 loss_function:
   _target_: src.loss.Loss
+  mask_factor: 1.0
   spec_factor_magnitude: 20000
   spec_factor_complex: 20000
   spec_gamma: 0.6
+  mr_factor: 0.5
+  mr_factor_complex: 0.5
+  sdr_factor: 0.1
   # keep only Eq. (8): L = λ_spec * L_spec + λ_α * L_α
   lsnr_factor: 0.0
-  alpha_factor: 1.0
+  alpha_factor: 2.0
   alpha_lsnr_low: -10.0
   alpha_lsnr_high: -5.0
   mask_f_under: 1
