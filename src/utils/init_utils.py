@@ -77,13 +77,29 @@ def log_git_commit_and_patch(save_dir):
     Args:
         save_dir (Path): directory to save patch and commit in
     """
-    print("Logging git commit and patch...")
     commit_path = save_dir / "git_commit.txt"
     patch_path = save_dir / "git_diff.patch"
-    with commit_path.open("w") as f:
-        subprocess.call(["git", "rev-parse", "HEAD"], stdout=f)
-    with patch_path.open("w") as f:
-        subprocess.call(["git", "diff", "HEAD"], stdout=f)
+    git_bin = shutil.which("git")
+    if git_bin is None:
+        commit_path.write_text("git executable is not available in PATH\n")
+        patch_path.write_text("git executable is not available in PATH\n")
+        print("Skipping git commit/patch logging: git is not available.")
+        return
+
+    print("Logging git commit and patch...")
+    try:
+        with commit_path.open("w") as f:
+            ret = subprocess.call([git_bin, "rev-parse", "HEAD"], stdout=f, stderr=subprocess.DEVNULL)
+        with patch_path.open("w") as f:
+            ret_diff = subprocess.call([git_bin, "diff", "HEAD"], stdout=f, stderr=subprocess.DEVNULL)
+        if ret != 0:
+            commit_path.write_text("git metadata is unavailable for this run\n")
+        if ret_diff != 0:
+            patch_path.write_text("git diff is unavailable for this run\n")
+    except OSError as exc:
+        commit_path.write_text(f"failed to query git metadata: {exc}\n")
+        patch_path.write_text(f"failed to query git diff: {exc}\n")
+        print(f"Skipping git commit/patch logging: {exc}")
 
 
 def resume_config(save_dir):
