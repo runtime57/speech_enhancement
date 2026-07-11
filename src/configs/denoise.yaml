@@ -3,9 +3,9 @@ defaults:
   - _self_
 
 denoise:
-  noisy_dir: "audio/noisy"
+  noisy_dir: "demo/audio/noisy"
   output_dir: "demo/audio/enhanced/newgrnn"
-  from_pretrained: "saved/newgrnn.pth"
+  from_pretrained: "saved/newnewgrnn.pth"
   device: auto
   seed: 1
 
