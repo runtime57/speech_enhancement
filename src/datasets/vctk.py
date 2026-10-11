@@ -45,6 +45,8 @@ class VCTKDataset(BaseDataset):
         # the object, including label, path, etc.
         if index_path.exists():
             index = read_json(str(index_path))
+            if any(Path(element["element_path"]).parent != index_path.parent for element in index):
+                index = self._create_index(rawdata_path, name, sr)
         else:
             index = self._create_index(rawdata_path,  name, sr)
 
@@ -53,19 +55,20 @@ class VCTKDataset(BaseDataset):
     def _create_index(self, rawdata_path, name, sr=16000):
         index = []
         data_path = ROOT_PATH / "data" / "vctk"
-        data_path.mkdir(exist_ok=True, parents=True)
+        split_path = data_path / name
+        split_path.mkdir(exist_ok=True, parents=True)
         
         if name != "onebatch":
             create_vctk_split(name, rawdata_path, data_path)
 
-        split = read_json(data_path / name / "split.json")
+        split = read_json(split_path / "split.json")
         number_of_zeros = 8
         
         p = stft_config()
 
         print("Creating VCTK Dataset")
         for i, element in tqdm(enumerate(split), total=len(split)):
-            path = data_path / f"{i:0{number_of_zeros}d}.pt"
+            path = split_path / f"{i:0{number_of_zeros}d}.pt"
 
             clean_path, noisy_path = element["clean_path"], element["noisy_path"]
 
@@ -83,7 +86,7 @@ class VCTKDataset(BaseDataset):
                 "original_noisy": noisy_path
             })
 
-        write_json(index, str(data_path / name / "index.json"))
+        write_json(index, str(split_path / "index.json"))
         return index
 
 
