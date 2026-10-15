@@ -1,0 +1,6 @@
+_target_: src.logger.TensorBoardWriter
+project_name: speech_enhancement
+run_name: dfnet
+loss_names: [loss, sl, al]
+log_checkpoints: false
+id_length: 32

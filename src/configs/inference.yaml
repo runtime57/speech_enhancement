@@ -1,13 +1,13 @@
 defaults:
-  - model: baseline
-  - metrics: example
-  - datasets: example_eval # we do not want to run inference on training data
-  - dataloader: example
-  - transforms: example
+  - dfnet
+  - override datasets: vctk_test
   - _self_
 inferencer:
-  device_tensors: ["data_object", "labels"] # which tensors should be on device (ex. GPU)
+  device_tensors: [noisy, clean]
   device: auto # device name or "auto"
-  save_path: "example" # any name here, can be a dataset name
+  amp: true
+  amp_dtype: float16
+  save_path: dfnet
+  save_predictions: false
   seed: 1
-  from_pretrained: "saved/model_best.pth" # path to the pretrained model
+  from_pretrained: saved/dfnet_audited_20261013/model_best.pth

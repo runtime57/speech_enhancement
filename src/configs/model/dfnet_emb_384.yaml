@@ -1,0 +1,4 @@
+_target_: src.model.DfNet
+mask_pf: true
+emb_hidden_dim: 384
+df_hidden_dim: 384

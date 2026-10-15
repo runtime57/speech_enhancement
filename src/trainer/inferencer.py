@@ -1,8 +1,13 @@
 import torch
+import logging
 from tqdm.auto import tqdm
 
 from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
+from src.utils.config_utils import stft_config
+from src.utils.enhancement import prepare_enhancement_inputs, synthesize_enhancement
+from src.utils.io_utils import safe_torchaudio_save
+from src.utils.precision import amp_settings, model_autocast
 
 
 class Inferencer(BaseTrainer):
@@ -55,9 +60,13 @@ class Inferencer(BaseTrainer):
         self.cfg_trainer = self.config.inferencer
 
         self.device = device
+        self.logger = logging.getLogger("inference")
+        self.amp_enabled, self.amp_dtype = amp_settings(self.cfg_trainer, device)
+        self._output_counts = {}
+        self.is_train = False
 
         self.model = model
-        self.batch_transforms = batch_transforms
+        self.batch_transforms = batch_transforms or {}
 
         # define dataloaders
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items()}
@@ -117,38 +126,28 @@ class Inferencer(BaseTrainer):
                 and model outputs.
         """
         batch = self.move_batch_to_device(batch)
+        batch["lengths"] = batch["lengths"].to(self.device)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
 
-        outputs = self.model(**batch)
-        batch.update(outputs)
+        inputs, _ = prepare_enhancement_inputs(batch["noisy"], batch["lengths"])
+        with model_autocast(self.device, self.amp_enabled, self.amp_dtype):
+            enhanced = self.model(**inputs)[0]
+        wave = synthesize_enhancement(enhanced.float(), batch["lengths"], batch["noisy"].shape[-1])
+        batch.update({"separated_audio": wave, "audio_target": batch["clean"], "audio_mix": batch["noisy"]})
 
         if metrics is not None:
             for met in self.metrics["inference"]:
-                metrics.update(met.name, met(**batch))
+                metrics.update(met.name, met(**batch), n=wave.shape[0])
 
         # Some saving logic. This is an example
         # Use if you need to save predictions on disk
 
-        batch_size = batch["logits"].shape[0]
-        current_id = batch_idx * batch_size
-
-        for i in range(batch_size):
-            # clone because of
-            # https://github.com/pytorch/pytorch/issues/1995
-            logits = batch["logits"][i].clone()
-            label = batch["labels"][i].clone()
-            pred_label = logits.argmax(dim=-1)
-
-            output_id = current_id + i
-
-            output = {
-                "pred_label": pred_label,
-                "label": label,
-            }
-
-            if self.save_path is not None:
-                # you can use safetensors or other lib here
-                torch.save(output, self.save_path / part / f"output_{output_id}.pth")
+        current_id = self._output_counts.get(part, 0)
+        if self.save_path is not None and self.cfg_trainer.get("save_predictions", False):
+            for i, size in enumerate(batch["lengths"].tolist()):
+                safe_torchaudio_save(self.save_path / part / f"{current_id + i:08d}.wav",
+                                    wave[i, :size].detach().cpu().unsqueeze(0), stft_config().sr)
+        self._output_counts[part] = current_id + wave.shape[0]
 
         return batch
 
@@ -166,7 +165,8 @@ class Inferencer(BaseTrainer):
         self.is_train = False
         self.model.eval()
 
-        self.evaluation_metrics.reset()
+        if self.evaluation_metrics is not None:
+            self.evaluation_metrics.reset()
 
         # create Save dir
         if self.save_path is not None:
@@ -185,4 +185,4 @@ class Inferencer(BaseTrainer):
                     metrics=self.evaluation_metrics,
                 )
 
-        return self.evaluation_metrics.result()
+        return {} if self.evaluation_metrics is None else self.evaluation_metrics.result()

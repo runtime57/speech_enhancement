@@ -1,0 +1,332 @@
+{
+  "torch": "2.5.1+cu121",
+  "device": "cuda",
+  "threads": 1,
+  "hardware": "NVIDIA GeForce RTX 4070",
+  "precision": "amp",
+  "warmup": 3,
+  "iterations": 10,
+  "scope": "Full model only. Synthetic loss; no optimizer, audio preprocessing or metrics.",
+  "results": [
+    {
+      "model": "deepfilternet",
+      "batch_size": 1,
+      "frames": 200,
+      "parameters": 1695703,
+      "forward": {
+        "median_ms": 13.300759500452841,
+        "min_ms": 12.77708799989341,
+        "max_ms": 14.801947000705695
+      },
+      "forward_backward": {
+        "median_ms": 33.46285799989346,
+        "min_ms": 32.74306200000865,
+        "max_ms": 36.575074000211316
+      }
+    },
+    {
+      "model": "deepfilternetgrnn",
+      "batch_size": 1,
+      "frames": 200,
+      "parameters": 1046647,
+      "forward": {
+        "median_ms": 5.387028999848553,
+        "min_ms": 5.280150999169564,
+        "max_ms": 5.876732000615448
+      },
+      "forward_backward": {
+        "median_ms": 15.601574500124116,
+        "min_ms": 15.452304000064032,
+        "max_ms": 16.77912600007403
+      }
+    },
+    {
+      "model": "grnn_emb_128",
+      "batch_size": 1,
+      "frames": 200,
+      "parameters": 360055,
+      "forward": {
+        "median_ms": 5.280725999909919,
+        "min_ms": 5.1752009994743275,
+        "max_ms": 5.785137999737344
+      },
+      "forward_backward": {
+        "median_ms": 15.173179500379774,
+        "min_ms": 14.736785999957647,
+        "max_ms": 17.265073999624292
+      }
+    },
+    {
+      "model": "grnn_emb_256",
+      "batch_size": 1,
+      "frames": 200,
+      "parameters": 552055,
+      "forward": {
+        "median_ms": 5.305518999648484,
+        "min_ms": 5.256434999864723,
+        "max_ms": 5.527699000595021
+      },
+      "forward_backward": {
+        "median_ms": 15.122192499347875,
+        "min_ms": 14.660892000392778,
+        "max_ms": 16.491279999172548
+      }
+    },
+    {
+      "model": "grnn_emb_384",
+      "batch_size": 1,
+      "frames": 200,
+      "parameters": 780919,
+      "forward": {
+        "median_ms": 5.305562999637914,
+        "min_ms": 5.233402000158094,
+        "max_ms": 5.516518999684195
+      },
+      "forward_backward": {
+        "median_ms": 15.594212999985757,
+        "min_ms": 14.856489000521833,
+        "max_ms": 16.575114000261237
+      }
+    },
+    {
+      "model": "deepfilternet",
+      "batch_size": 1,
+      "frames": 400,
+      "parameters": 1695703,
+      "forward": {
+        "median_ms": 12.138986000081786,
+        "min_ms": 11.791957000241382,
+        "max_ms": 12.544696999611915
+      },
+      "forward_backward": {
+        "median_ms": 33.74861800011786,
+        "min_ms": 32.784981000077096,
+        "max_ms": 36.2802030003877
+      }
+    },
+    {
+      "model": "deepfilternetgrnn",
+      "batch_size": 1,
+      "frames": 400,
+      "parameters": 1046647,
+      "forward": {
+        "median_ms": 6.008712499806279,
+        "min_ms": 5.889216000468878,
+        "max_ms": 6.506220999654033
+      },
+      "forward_backward": {
+        "median_ms": 18.30819450015042,
+        "min_ms": 17.928011999174487,
+        "max_ms": 18.869307999921148
+      }
+    },
+    {
+      "model": "grnn_emb_128",
+      "batch_size": 1,
+      "frames": 400,
+      "parameters": 360055,
+      "forward": {
+        "median_ms": 5.639762499868084,
+        "min_ms": 5.480671000441362,
+        "max_ms": 6.784095000512025
+      },
+      "forward_backward": {
+        "median_ms": 15.930637000110437,
+        "min_ms": 15.552324000054796,
+        "max_ms": 16.533305000848486
+      }
+    },
+    {
+      "model": "grnn_emb_256",
+      "batch_size": 1,
+      "frames": 400,
+      "parameters": 552055,
+      "forward": {
+        "median_ms": 5.389377499795955,
+        "min_ms": 5.341918000340229,
+        "max_ms": 5.907411000407592
+      },
+      "forward_backward": {
+        "median_ms": 15.781648499796574,
+        "min_ms": 15.346993999628467,
+        "max_ms": 16.361668999707035
+      }
+    },
+    {
+      "model": "grnn_emb_384",
+      "batch_size": 1,
+      "frames": 400,
+      "parameters": 780919,
+      "forward": {
+        "median_ms": 5.945257000348647,
+        "min_ms": 5.845573000442528,
+        "max_ms": 6.0772219994760235
+      },
+      "forward_backward": {
+        "median_ms": 17.661273500380048,
+        "min_ms": 17.303566999544273,
+        "max_ms": 18.307721999917703
+      }
+    },
+    {
+      "model": "deepfilternet",
+      "batch_size": 32,
+      "frames": 200,
+      "parameters": 1695703,
+      "forward": {
+        "median_ms": 21.424247000140895,
+        "min_ms": 21.347861999856832,
+        "max_ms": 21.690230999411142
+      },
+      "forward_backward": {
+        "median_ms": 69.05894949977665,
+        "min_ms": 68.62954600001103,
+        "max_ms": 70.12061399927916
+      }
+    },
+    {
+      "model": "deepfilternetgrnn",
+      "batch_size": 32,
+      "frames": 200,
+      "parameters": 1046647,
+      "forward": {
+        "median_ms": 13.263475500480126,
+        "min_ms": 13.136589999703574,
+        "max_ms": 13.780290999420686
+      },
+      "forward_backward": {
+        "median_ms": 43.12504500012437,
+        "min_ms": 42.809747000319476,
+        "max_ms": 43.80705499988835
+      }
+    },
+    {
+      "model": "grnn_emb_128",
+      "batch_size": 32,
+      "frames": 200,
+      "parameters": 360055,
+      "forward": {
+        "median_ms": 12.140599999838741,
+        "min_ms": 12.067159999787691,
+        "max_ms": 12.59553300042171
+      },
+      "forward_backward": {
+        "median_ms": 39.35693599987644,
+        "min_ms": 39.13748300055886,
+        "max_ms": 39.98232600042684
+      }
+    },
+    {
+      "model": "grnn_emb_256",
+      "batch_size": 32,
+      "frames": 200,
+      "parameters": 552055,
+      "forward": {
+        "median_ms": 11.999867499525863,
+        "min_ms": 11.85167099993123,
+        "max_ms": 12.255077000190795
+      },
+      "forward_backward": {
+        "median_ms": 39.43769199986491,
+        "min_ms": 39.31386299973383,
+        "max_ms": 39.78266700050881
+      }
+    },
+    {
+      "model": "grnn_emb_384",
+      "batch_size": 32,
+      "frames": 200,
+      "parameters": 780919,
+      "forward": {
+        "median_ms": 12.938153499817417,
+        "min_ms": 12.882607999927131,
+        "max_ms": 13.159714000721578
+      },
+      "forward_backward": {
+        "median_ms": 42.33088499995574,
+        "min_ms": 42.01570399982302,
+        "max_ms": 42.93814999982715
+      }
+    },
+    {
+      "model": "deepfilternet",
+      "batch_size": 32,
+      "frames": 400,
+      "parameters": 1695703,
+      "forward": {
+        "median_ms": 41.90157400034877,
+        "min_ms": 41.74693500044668,
+        "max_ms": 42.74624699974083
+      },
+      "forward_backward": {
+        "median_ms": 133.82768649989885,
+        "min_ms": 133.41603299977578,
+        "max_ms": 134.16930200037314
+      }
+    },
+    {
+      "model": "deepfilternetgrnn",
+      "batch_size": 32,
+      "frames": 400,
+      "parameters": 1046647,
+      "forward": {
+        "median_ms": 28.736519999711163,
+        "min_ms": 28.419416000360798,
+        "max_ms": 28.998049000620085
+      },
+      "forward_backward": {
+        "median_ms": 90.64767900008519,
+        "min_ms": 90.1485500007766,
+        "max_ms": 90.96723400034534
+      }
+    },
+    {
+      "model": "grnn_emb_128",
+      "batch_size": 32,
+      "frames": 400,
+      "parameters": 360055,
+      "forward": {
+        "median_ms": 25.846033499874466,
+        "min_ms": 25.561016999745334,
+        "max_ms": 26.000188000580238
+      },
+      "forward_backward": {
+        "median_ms": 82.02169350033728,
+        "min_ms": 81.43082199967466,
+        "max_ms": 82.59669900053268
+      }
+    },
+    {
+      "model": "grnn_emb_256",
+      "batch_size": 32,
+      "frames": 400,
+      "parameters": 552055,
+      "forward": {
+        "median_ms": 25.565954500052612,
+        "min_ms": 25.311455000519345,
+        "max_ms": 25.965064000047278
+      },
+      "forward_backward": {
+        "median_ms": 82.6015174998247,
+        "min_ms": 81.80462499967689,
+        "max_ms": 83.1861430006029
+      }
+    },
+    {
+      "model": "grnn_emb_384",
+      "batch_size": 32,
+      "frames": 400,
+      "parameters": 780919,
+      "forward": {
+        "median_ms": 27.66247200042926,
+        "min_ms": 27.40181599983771,
+        "max_ms": 28.143978999651154
+      },
+      "forward_backward": {
+        "median_ms": 88.61873300020306,
+        "min_ms": 87.89272099966183,
+        "max_ms": 89.45094800037623
+      }
+    }
+  ]
+}

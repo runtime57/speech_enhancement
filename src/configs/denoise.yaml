@@ -3,6 +3,7 @@ defaults:
   - _self_
 
 denoise:
+  precision: amp # fp32, amp (float32 weights), or fp16 (half weights)
   noisy_dir: "demo/audio/noisy"
   output_dir: "demo/audio/enhanced/grnn_emb_384"
   from_pretrained: "saved/grnn_emb_384.pth"

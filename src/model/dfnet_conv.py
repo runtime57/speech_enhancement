@@ -93,6 +93,7 @@ class EncoderGRNN(nn.Module):
             groups=p.gru_groups,
             shuffle=p.group_shuffle,
             add_outputs=True,
+            backend=p.grnn_backend,
         )
         self.lsnr_fc = nn.Sequential(nn.Linear(self.emb_out_dim, 1), nn.Sigmoid())
         self.lsnr_scale = p.lsnr_max - p.lsnr_min
@@ -214,6 +215,7 @@ class DfDecoderGRNN(nn.Module):
             groups=p.gru_groups,
             shuffle=p.group_shuffle,
             add_outputs=True,
+            backend=p.grnn_backend,
         )
         self.df_fc_out = nn.Sequential(
             nn.Linear(self.df_n_hidden, self.df_bins * self.df_order * 2), nn.Tanh()
@@ -256,6 +258,7 @@ class DfNetConv(nn.Module):
         dfop_method: str = "real_unfold",
         mask_pf: bool = False,
         conv_groups: int = 1,
+        grnn_backend: str = "auto",
     ):
         super().__init__()
 
@@ -304,6 +307,7 @@ class DfNetConv(nn.Module):
         self.run_df = run_df
         self.train_mask = train_mask
         self.conv_groups = conv_groups
+        self.grnn_backend = grnn_backend
 
         layer_width = self.conv_ch
         assert self.nb_erb % 8 == 0, "erb_bins should be divisible by 8"

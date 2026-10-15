@@ -79,7 +79,7 @@ def get_dataloaders(config, device):
             config.dataloader,
             dataset=dataset,
             collate_fn=collate_fn,
-            drop_last=(dataset_partition == "train"),
+            drop_last=(dataset_partition == "train" and config.trainer.get("drop_last", True)),
             shuffle=(dataset_partition == "train"),
             worker_init_fn=set_worker_seed,
         )

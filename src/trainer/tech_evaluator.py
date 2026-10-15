@@ -68,8 +68,8 @@ class TechEvaluator(BaseTrainer):
 
         p = stft_config()
 
-        clean_stft = stft_with_df_config(batch["clean"])
-        noisy_stft = stft_with_df_config(batch["noisy"])
+        clean_stft = stft_with_df_config(batch["clean"], batch["lengths"])
+        noisy_stft = stft_with_df_config(batch["noisy"], batch["lengths"])
 
         def to_spec(x):
             return x.unsqueeze(1).permute(0, 1, 3, 2, 4).contiguous()

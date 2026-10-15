@@ -1,0 +1,18 @@
+train:
+  _target_: src.datasets.VCTKDataset
+  rawdata_path: "${hydra:runtime.cwd}/data"
+  name: train
+  exclude_speakers: [p226, p287]
+  segment_seconds: null
+  instance_transforms: ${transforms.instance_transforms.train}
+val:
+  _target_: src.datasets.VCTKDataset
+  rawdata_path: "${hydra:runtime.cwd}/data"
+  name: train
+  include_speakers: [p226, p287]
+  instance_transforms: ${transforms.instance_transforms.inference}
+test:
+  _target_: src.datasets.VCTKDataset
+  rawdata_path: "${hydra:runtime.cwd}/data"
+  name: test
+  instance_transforms: ${transforms.instance_transforms.inference}

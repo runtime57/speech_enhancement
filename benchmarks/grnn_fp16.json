@@ -1,0 +1,252 @@
+{
+  "torch": "2.5.1+cu121",
+  "device": "cuda",
+  "threads": 1,
+  "hardware": "NVIDIA GeForce RTX 4070",
+  "precision": "fp16",
+  "warmup": 3,
+  "iterations": 10,
+  "scope": "Full model only. Synthetic loss; no optimizer, audio preprocessing or metrics.",
+  "results": [
+    {
+      "model": "deepfilternet",
+      "batch_size": 1,
+      "frames": 200,
+      "parameters": 1695703,
+      "forward": {
+        "median_ms": 8.281986999918445,
+        "min_ms": 7.8214029999799095,
+        "max_ms": 9.489602000030573
+      },
+      "forward_backward": null
+    },
+    {
+      "model": "deepfilternetgrnn",
+      "batch_size": 1,
+      "frames": 200,
+      "parameters": 1046647,
+      "forward": {
+        "median_ms": 5.51522149999073,
+        "min_ms": 5.15534399983153,
+        "max_ms": 6.86566500007757
+      },
+      "forward_backward": null
+    },
+    {
+      "model": "grnn_emb_128",
+      "batch_size": 1,
+      "frames": 200,
+      "parameters": 360055,
+      "forward": {
+        "median_ms": 5.15162150031756,
+        "min_ms": 4.930418000185455,
+        "max_ms": 5.702948999896762
+      },
+      "forward_backward": null
+    },
+    {
+      "model": "grnn_emb_256",
+      "batch_size": 1,
+      "frames": 200,
+      "parameters": 552055,
+      "forward": {
+        "median_ms": 4.965247500422265,
+        "min_ms": 4.809798000678711,
+        "max_ms": 7.075477999933355
+      },
+      "forward_backward": null
+    },
+    {
+      "model": "grnn_emb_384",
+      "batch_size": 1,
+      "frames": 200,
+      "parameters": 780919,
+      "forward": {
+        "median_ms": 5.138296000041009,
+        "min_ms": 4.921751000438235,
+        "max_ms": 6.0480889997052145
+      },
+      "forward_backward": null
+    },
+    {
+      "model": "deepfilternet",
+      "batch_size": 1,
+      "frames": 400,
+      "parameters": 1695703,
+      "forward": {
+        "median_ms": 10.097212999880867,
+        "min_ms": 9.834645000410092,
+        "max_ms": 12.021962000289932
+      },
+      "forward_backward": null
+    },
+    {
+      "model": "deepfilternetgrnn",
+      "batch_size": 1,
+      "frames": 400,
+      "parameters": 1046647,
+      "forward": {
+        "median_ms": 6.357911499890179,
+        "min_ms": 5.783771000096749,
+        "max_ms": 6.7699639994316385
+      },
+      "forward_backward": null
+    },
+    {
+      "model": "grnn_emb_128",
+      "batch_size": 1,
+      "frames": 400,
+      "parameters": 360055,
+      "forward": {
+        "median_ms": 5.246162000275945,
+        "min_ms": 5.102103999888641,
+        "max_ms": 6.476161000136926
+      },
+      "forward_backward": null
+    },
+    {
+      "model": "grnn_emb_256",
+      "batch_size": 1,
+      "frames": 400,
+      "parameters": 552055,
+      "forward": {
+        "median_ms": 5.061731500063615,
+        "min_ms": 4.913204999866139,
+        "max_ms": 6.18750400008139
+      },
+      "forward_backward": null
+    },
+    {
+      "model": "grnn_emb_384",
+      "batch_size": 1,
+      "frames": 400,
+      "parameters": 780919,
+      "forward": {
+        "median_ms": 6.0777754997616285,
+        "min_ms": 5.6878499999584164,
+        "max_ms": 6.769859000087308
+      },
+      "forward_backward": null
+    },
+    {
+      "model": "deepfilternet",
+      "batch_size": 32,
+      "frames": 200,
+      "parameters": 1695703,
+      "forward": {
+        "median_ms": 21.426459999929648,
+        "min_ms": 20.992020000448974,
+        "max_ms": 21.781293999993068
+      },
+      "forward_backward": null
+    },
+    {
+      "model": "deepfilternetgrnn",
+      "batch_size": 32,
+      "frames": 200,
+      "parameters": 1046647,
+      "forward": {
+        "median_ms": 13.630962000206637,
+        "min_ms": 13.497702000677236,
+        "max_ms": 13.866127000255801
+      },
+      "forward_backward": null
+    },
+    {
+      "model": "grnn_emb_128",
+      "batch_size": 32,
+      "frames": 200,
+      "parameters": 360055,
+      "forward": {
+        "median_ms": 12.494413000240456,
+        "min_ms": 12.226974999975937,
+        "max_ms": 13.00628399985726
+      },
+      "forward_backward": null
+    },
+    {
+      "model": "grnn_emb_256",
+      "batch_size": 32,
+      "frames": 200,
+      "parameters": 552055,
+      "forward": {
+        "median_ms": 12.273345500489086,
+        "min_ms": 11.935933000131627,
+        "max_ms": 12.648900000385765
+      },
+      "forward_backward": null
+    },
+    {
+      "model": "grnn_emb_384",
+      "batch_size": 32,
+      "frames": 200,
+      "parameters": 780919,
+      "forward": {
+        "median_ms": 13.258437500098808,
+        "min_ms": 13.078947000394692,
+        "max_ms": 13.575033000051917
+      },
+      "forward_backward": null
+    },
+    {
+      "model": "deepfilternet",
+      "batch_size": 32,
+      "frames": 400,
+      "parameters": 1695703,
+      "forward": {
+        "median_ms": 41.524172999743314,
+        "min_ms": 41.23872099989967,
+        "max_ms": 41.92231199976959
+      },
+      "forward_backward": null
+    },
+    {
+      "model": "deepfilternetgrnn",
+      "batch_size": 32,
+      "frames": 400,
+      "parameters": 1046647,
+      "forward": {
+        "median_ms": 28.986317500311998,
+        "min_ms": 28.751126000315708,
+        "max_ms": 29.388365999693633
+      },
+      "forward_backward": null
+    },
+    {
+      "model": "grnn_emb_128",
+      "batch_size": 32,
+      "frames": 400,
+      "parameters": 360055,
+      "forward": {
+        "median_ms": 26.212437999674876,
+        "min_ms": 25.85123299922998,
+        "max_ms": 26.54107099988323
+      },
+      "forward_backward": null
+    },
+    {
+      "model": "grnn_emb_256",
+      "batch_size": 32,
+      "frames": 400,
+      "parameters": 552055,
+      "forward": {
+        "median_ms": 26.002347499797906,
+        "min_ms": 25.720634999743197,
+        "max_ms": 26.520573000198056
+      },
+      "forward_backward": null
+    },
+    {
+      "model": "grnn_emb_384",
+      "batch_size": 32,
+      "frames": 400,
+      "parameters": 780919,
+      "forward": {
+        "median_ms": 27.93468399977428,
+        "min_ms": 27.524799999810057,
+        "max_ms": 28.146980000201438
+      },
+      "forward_backward": null
+    }
+  ]
+}

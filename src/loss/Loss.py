@@ -8,7 +8,7 @@ from torch import Tensor, nn
 
 from src.model.modules import LocalSnrTarget, Mask
 from src.utils.config_utils import stft_config
-from src.utils.df_utils import angle, as_complex
+from src.utils.df_utils import angle, as_complex, istft_with_df_config
 from src.utils.erb_utils import make_erb_fb_matrix_torch
 
 
@@ -141,6 +141,15 @@ class MultiResSpecLoss(nn.Module):
         return loss
 
 
+def mean_valid_frames(values: Tensor, lengths: Optional[Tensor] = None) -> Tensor:
+    """Reduce [B,T] errors over real frames, excluding trailing batch padding."""
+    if lengths is None:
+        return values.mean()
+    lengths = lengths.to(device=values.device)
+    valid = torch.arange(values.shape[1], device=values.device)[None, :] < lengths[:, None]
+    return values.masked_fill(~valid, 0).sum() / valid.sum().clamp_min(1)
+
+
 class SpectralLoss(nn.Module):
     gamma: Final[float]
     f_m: Final[float]
@@ -153,14 +162,18 @@ class SpectralLoss(nn.Module):
         factor_magnitude: float = 1,
         factor_complex: float = 1,
         factor_under: float = 1,
+        frequency_reduction: str = "mean",
     ):
         super().__init__()
         self.gamma = gamma
         self.f_m = factor_magnitude
         self.f_c = factor_complex
         self.f_u = factor_under
+        if frequency_reduction not in ("mean", "sum"):
+            raise ValueError("frequency_reduction must be mean or sum")
+        self.frequency_reduction = frequency_reduction
 
-    def forward(self, input, target):
+    def forward(self, input, target, lengths=None):
         input = as_complex(input)
         target = as_complex(target)
         input_abs = input.abs()
@@ -172,14 +185,15 @@ class SpectralLoss(nn.Module):
         if self.f_u != 1:
             # Weighting if predicted abs is too low
             tmp *= torch.where(input_abs < target_abs, self.f_u, 1.0)
-        loss = torch.mean(tmp) * self.f_m
+        reduce_frequency = torch.sum if self.frequency_reduction == "sum" else torch.mean
+        loss = mean_valid_frames(reduce_frequency(tmp, dim=-1).mean(dim=1), lengths) * self.f_m
         if self.f_c > 0:
             if self.gamma != 1:
                 input = input_abs * torch.exp(1j * angle.apply(input))
                 target = target_abs * torch.exp(1j * angle.apply(target))
-            loss_c = (
-                F.mse_loss(torch.view_as_real(input), target=torch.view_as_real(target)) * self.f_c
-            )
+            error = (torch.view_as_real(input) - torch.view_as_real(target)).square()
+            error = error.sum(dim=-1) if self.frequency_reduction == "sum" else error.mean(dim=-1)
+            loss_c = mean_valid_frames(reduce_frequency(error, dim=-1).mean(dim=1), lengths) * self.f_c
             loss = loss + loss_c
         return loss
 
@@ -308,7 +322,7 @@ class DfAlphaLoss(nn.Module):
     """DF usage gating loss from DeepFilterNet paper (Eq. 7).
 
     Penalizes using DF (alpha=1) for very noisy segments and encourages DF for clean segments:
-        L_alpha = alpha * 1[LSNR < lsnr_low] + (1 - alpha) * 1[LSNR > lsnr_high]
+        L_alpha = alpha**2 * 1[LSNR < lsnr_low] + (1 - alpha)**2 * 1[LSNR > lsnr_high]
     """
 
     factor: Final[float]
@@ -321,13 +335,13 @@ class DfAlphaLoss(nn.Module):
         self.lsnr_low = lsnr_low
         self.lsnr_high = lsnr_high
 
-    def forward(self, pred_alpha: Tensor, target_lsnr: Tensor):
+    def forward(self, pred_alpha: Tensor, target_lsnr: Tensor, lengths=None):
         # pred_alpha: [B, T, 1]
         # target_lsnr: [B, T]
         low = (target_lsnr < self.lsnr_low).unsqueeze(-1)
         high = (target_lsnr > self.lsnr_high).unsqueeze(-1)
-        loss = pred_alpha * low + (1 - pred_alpha) * high
-        return loss.float().mean() * self.factor
+        loss = pred_alpha.square() * low + (1 - pred_alpha).square() * high
+        return mean_valid_frames(loss.float().mean(dim=-1), lengths) * self.factor
 
 
 class SiSdr(nn.Module):
@@ -656,6 +670,7 @@ class Loss(nn.Module):
         spec_factor_complex: float = 0.0,
         spec_factor_under: float = 1.0,
         spec_gamma: float = 1.0,
+        spec_frequency_reduction: str = "mean",
         # Multi-resolution spectral loss
         mr_factor: float = 0.0,
         mr_factor_complex: float = 0.0,
@@ -759,6 +774,7 @@ class Loss(nn.Module):
                 factor_magnitude=self.sl_fm,
                 factor_complex=self.sl_fc,
                 factor_under=self.sl_fu,
+                frequency_reduction=spec_frequency_reduction,
                 gamma=self.sl_gamma,
             )
             if self.sl_f > 0
@@ -881,6 +897,8 @@ class Loss(nn.Module):
         m: Optional[Tensor] = None,
         lsnr: Optional[Tensor] = None,
         df_alpha: Optional[Tensor] = None,
+        frame_lengths: Optional[Tensor] = None,
+        lengths: Optional[Tensor] = None,
         **batch,
     ) -> Dict[str, Tensor]:
         """Compute all enabled loss terms; returns dict with 'loss' and components."""
@@ -895,6 +913,11 @@ class Loss(nn.Module):
         clean_spec = self._as_spec(clean)
         noisy_spec = self._as_spec(noisy)
         enh_spec = self._as_spec(enh)
+        if frame_lengths is not None:
+            valid = torch.arange(clean_spec.shape[2], device=clean_spec.device)[None, :] < frame_lengths[:, None]
+            invalid = ~valid[:, None, :, None, None]
+            clean_spec = clean_spec.masked_fill(invalid, 0)
+            noisy_spec = noisy_spec.masked_fill(invalid, 0)
 
         enhanced_td = None
         clean_td = None
@@ -907,8 +930,22 @@ class Loss(nn.Module):
         if need_td:
             if self.istft is None:
                 raise RuntimeError("Time-domain losses requested but `istft` is not available.")
-            enhanced_td = self.istft(enh_spec)
-            clean_td = self.istft(clean_spec)
+            if lengths is None:
+                enhanced_td = self.istft(enh_spec)
+                clean_td = self.istft(clean_spec)
+            else:
+                # Reconstruct each real utterance before evaluating waveform losses.
+                output_length = int(lengths.max().item())
+                enhanced_td = istft_with_df_config(
+                    enh_spec.squeeze(1).permute(0, 2, 1, 3), length=output_length, lengths=lengths)
+                clean_td = istft_with_df_config(
+                    clean_spec.squeeze(1).permute(0, 2, 1, 3), length=output_length, lengths=lengths)
+
+        def waveform_loss(module):
+            if lengths is None:
+                return module(enhanced_td, clean_td)
+            return torch.stack([module(enhanced_td[i:i + 1, :size], clean_td[i:i + 1, :size])
+                                for i, size in enumerate(lengths.tolist())]).mean()
 
         z = torch.zeros((), device=clean_spec.device)
         ml = sl = mrsl = sdrl = asrl = lsnrl = al = cal = z
@@ -917,22 +954,32 @@ class Loss(nn.Module):
             if m is None:
                 raise ValueError("Mask loss enabled but `m`/`mask` is missing.")
             m_in = m.unsqueeze(1) if m.dim() == 3 else m
-            ml = self.ml(input=m_in, clean=clean_spec, noisy=noisy_spec)
+            if frame_lengths is None:
+                ml = self.ml(input=m_in, clean=clean_spec, noisy=noisy_spec)
+            else:
+                ml = sum(self.ml(input=m_in[i:i + 1, :, :size],
+                                 clean=clean_spec[i:i + 1, :, :size],
+                                 noisy=noisy_spec[i:i + 1, :, :size]) * size
+                         for i, size in enumerate(frame_lengths.tolist())) / frame_lengths.sum()
 
         if self.sl is not None and self.sl_f != 0:
-            sl = self.sl(input=enh_spec, target=clean_spec)
+            sl = self.sl(input=enh_spec, target=clean_spec, lengths=frame_lengths)
 
         if self.mrsl is not None and self.mrsl_f > 0:
-            mrsl = self.mrsl(enhanced_td, clean_td)
+            mrsl = waveform_loss(self.mrsl)
 
         if self.asrl is not None and (self.asrl_f > 0 or self.asrl_f_lm > 0):
-            asrl = self.asrl(enhanced_td, clean_td)
+            asrl = waveform_loss(self.asrl)
 
         if self.lsnrl is not None and self.lsnr_f != 0:
             if lsnr is None:
                 raise ValueError("LocalSnrLoss enabled but `lsnr` is missing.")
             lsnr_gt = self.lsnr_target(clean_spec, noise=noisy_spec - clean_spec)
-            lsnrl = self.lsnrl(input=lsnr, target_lsnr=lsnr_gt)
+            if frame_lengths is None:
+                lsnrl = self.lsnrl(input=lsnr, target_lsnr=lsnr_gt)
+            else:
+                lsnrl = sum(self.lsnrl(input=lsnr[i:i + 1, :size], target_lsnr=lsnr_gt[i:i + 1, :size]) * size
+                            for i, size in enumerate(frame_lengths.tolist())) / frame_lengths.sum()
 
         if self.al is not None and self.al_f != 0:
             if df_alpha is None:
@@ -940,10 +987,10 @@ class Loss(nn.Module):
             lsnr_gt_df = self.lsnr_target(
                 clean_spec, noise=noisy_spec - clean_spec, max_bin=self.df_bins
             )
-            al = self.al(pred_alpha=df_alpha, target_lsnr=lsnr_gt_df)
+            al = self.al(pred_alpha=df_alpha, target_lsnr=lsnr_gt_df, lengths=frame_lengths)
 
         if self.sdrl is not None and self.sdrl_f != 0:
-            sdrl = self.sdrl(enhanced_td, clean_td)
+            sdrl = waveform_loss(self.sdrl)
 
         total = ml + sl + mrsl + sdrl + asrl + lsnrl + al + cal
         return {

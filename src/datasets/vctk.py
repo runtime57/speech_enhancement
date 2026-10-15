@@ -28,7 +28,8 @@ class VCTKDataset(BaseDataset):
     """
 
     def __init__(
-        self, rawdata_path, name="train", sr = 16000, *args, **kwargs
+        self, rawdata_path, name="train", sr=16000, include_speakers=None,
+        exclude_speakers=None, segment_seconds=None, *args, **kwargs
     ):
         """
         Args:
@@ -39,17 +40,31 @@ class VCTKDataset(BaseDataset):
             name (str): partition name
         """
         self.sr = sr
+        self.segment_samples = None if segment_seconds is None else int(segment_seconds * sr)
+        if self.segment_samples is not None and self.segment_samples <= 0:
+            raise ValueError("segment_seconds must be positive")
         index_path = ROOT_PATH / "data" / "vctk" / name / "index.json"
         # each nested dataset class must have an index field that
         # contains list of dicts. Each dict contains information about
         # the object, including label, path, etc.
         if index_path.exists():
             index = read_json(str(index_path))
-            if any(Path(element["element_path"]).parent != index_path.parent for element in index):
+            if not index or any(
+                Path(element["element_path"]).parent != index_path.parent
+                or not Path(element["element_path"]).is_file()
+                for element in index
+            ):
                 index = self._create_index(rawdata_path, name, sr)
         else:
             index = self._create_index(rawdata_path,  name, sr)
 
+        included = None if include_speakers is None else set(include_speakers)
+        excluded = set(exclude_speakers or [])
+        index = [element for element in index if
+                 (included is None or Path(element["original_clean"]).stem.split("_")[0] in included)
+                 and Path(element["original_clean"]).stem.split("_")[0] not in excluded]
+        if not index:
+            raise ValueError(f"Empty {name} dataset after speaker filtering")
         super().__init__(index, *args, **kwargs)
 
     def _create_index(self, rawdata_path, name, sr=16000):
@@ -75,6 +90,11 @@ class VCTKDataset(BaseDataset):
             clean, _ = safe_torchaudio_load(clean_path, sr)
             noisy, _ = safe_torchaudio_load(noisy_path, sr)
 
+            if clean.shape != noisy.shape or not clean.numel():
+                raise ValueError(f"Invalid audio pair: {clean_path}, {noisy_path}")
+            if not torch.isfinite(clean).all() or not torch.isfinite(noisy).all():
+                raise ValueError(f"Non-finite audio pair: {clean_path}, {noisy_path}")
+
             safetensors.torch.save_file({
                 "clean": clean,
                 "noisy": noisy
@@ -97,6 +117,9 @@ class VCTKDataset(BaseDataset):
 
         noisy = obj["noisy"]
         clean = obj["clean"]
-        noisy = self.preprocess_data(noisy)
-        return {"noisy": noisy, "clean": clean}
+        if self.segment_samples is not None and noisy.numel() > self.segment_samples:
+            start = int(torch.randint(noisy.numel() - self.segment_samples + 1, ()).item())
+            noisy = noisy[start:start + self.segment_samples]
+            clean = clean[start:start + self.segment_samples]
+        return self.preprocess_data({"noisy": noisy, "clean": clean})
         

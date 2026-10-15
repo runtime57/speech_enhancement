@@ -248,7 +248,8 @@ def exp_mean_norm_torch(
             v = valid_t[:, t].unsqueeze(1)  # [B,1]
             mu_new = alpha * mu + (1.0 - alpha) * xt
             mu = torch.where(v, mu_new, mu)
-        y[:, t, :] = xt - mu
+        value = xt - mu
+        y[:, t, :] = value if valid_t is None else torch.where(v, value, 0.0)
     return y
 
 

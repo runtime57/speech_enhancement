@@ -1,5 +1,5 @@
 _target_: src.logger.CometMLWriter
-project_name: "onebatch_grnn"
+project_name: "speech_enhancement"
 workspace: null
 run_name: "dfnet"
 mode: "online"

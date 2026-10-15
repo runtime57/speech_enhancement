@@ -1,4 +1,7 @@
 import warnings
+import signal
+import json
+from datetime import datetime, timezone
 
 import hydra
 import torch
@@ -23,10 +26,14 @@ def main(config):
     Args:
         config (DictConfig): hydra experiment config.
     """
+    # Background shell jobs may inherit SIGINT=SIG_IGN. Restore checkpoint-safe shutdown.
+    signal.signal(signal.SIGINT, signal.default_int_handler)
+    signal.signal(signal.SIGTERM, signal.default_int_handler)
     set_random_seed(config.trainer.seed)
 
     project_config = OmegaConf.to_container(config)
     logger = setup_saving_and_logging(config)
+    project_config = OmegaConf.to_container(config)
     writer = instantiate(config.writer, logger, project_config)
     setup_config(config)
 
@@ -73,7 +80,22 @@ def main(config):
         skip_oom=config.trainer.get("skip_oom", True),
     )
 
-    trainer.train()
+    try:
+        trainer.train()
+        result = {"epochs_completed": trainer._last_epoch,
+                  "epochs_requested": trainer.epochs,
+                  "stop_reason": "epoch_budget" if trainer._last_epoch == trainer.epochs else "early_stopping",
+                  "epoch_len": trainer.epoch_len,
+                  "evaluation_period": trainer.evaluation_period,
+                  "dataset_sizes": {name: len(loader.dataset) for name, loader in dataloaders.items()},
+                  "finished_at_utc": datetime.now(timezone.utc).isoformat(),
+                  "run_name": config.writer.run_name}
+        temporary = trainer.checkpoint_dir / "training_result.json.tmp"
+        temporary.write_text(json.dumps(result, indent=2) + "\n")
+        temporary.replace(trainer.checkpoint_dir / "training_result.json")
+    finally:
+        if hasattr(writer, "close"):
+            writer.close()
 
 
 if __name__ == "__main__":

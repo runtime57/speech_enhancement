@@ -1,0 +1,14 @@
+defaults:
+  - full_recordings
+  - _self_
+
+trainer:
+  n_epochs: 50
+  early_stop: 50
+  evaluation_period: 5
+
+dataloader:
+  multiprocessing_context: spawn
+
+writer:
+  run_name: report_full_50e

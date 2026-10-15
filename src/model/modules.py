@@ -13,6 +13,7 @@ from torch.nn.parameter import Parameter
 from typing_extensions import Final
 
 from src.model.comfifastgrnn import gen_non_linearity
+from src.model.fastgrnn import run_grouped_fastgrnn
 from src.utils.config_utils import stft_config
 
 from src.utils.df_utils import as_complex, as_real, get_norm_alpha
@@ -580,7 +581,7 @@ class GroupedGRULayer(nn.Module):
         if h0 is None:
             dim0, dim1 = input.shape[:2]
             bs = dim0 if self.batch_first else dim1
-            h0 = self.get_h0(bs, device=input.device)
+            h0 = input.new_zeros(self.groups * self.num_directions, bs, self.hidden_size)
         outputs: List[Tensor] = []
         outstates: List[Tensor] = []
         for i, layer in enumerate(self.layers):
@@ -660,9 +661,11 @@ class GroupedGRU(nn.Module):
         dim0, dim1, _ = input.shape
         b = dim0 if self.batch_first else dim1
         if state is None:
-            state = self.get_h0(b, input.device)
-        output = torch.zeros(
-            dim0, dim1, self.hidden_size * self.num_directions * self.groups, device=input.device
+            state = input.new_zeros(
+                self.num_layers * self.groups * self.num_directions, b, self.hidden_size
+            )
+        output = input.new_zeros(
+            dim0, dim1, self.hidden_size * self.num_directions * self.groups
         )
         outstates = []
         h = self.groups * self.num_directions
@@ -707,6 +710,7 @@ class GroupedGRNNLayer(nn.Module):
         nu_init: float = -4.0,
         lambda_init: float = 0.0,
         gamma_init: float = 0.999,
+        backend: str = "auto",
     ):
         super().__init__()
         assert input_size % groups == 0
@@ -724,6 +728,9 @@ class GroupedGRNNLayer(nn.Module):
         self.update_non_linearity = update_non_linearity
         self.w_rank = w_rank
         self.u_rank = u_rank
+        if backend not in ("auto", "torch", "triton"):
+            raise ValueError(f"Unknown GRNN backend: {backend}")
+        self.backend = backend
         self._init_grouped_fastgrnn_params(
             zeta_init=zeta_init,
             nu_init=nu_init,
@@ -852,14 +859,15 @@ class GroupedGRNNLayer(nn.Module):
         reverse: bool = False,
     ) -> Tuple[Tensor, Tensor]:
         # inputs: [B, T, G, I/G], h0: [B, G, H/G]
-        b, t, _, _ = inputs.shape
-        outputs = inputs.new_empty(b, t, self.groups, self.hidden_size)
-        h = h0
-        time_indices = range(t - 1, -1, -1) if reverse else range(t)
-        for idx in time_indices:
-            h = self._grouped_step(inputs[:, idx], h, params)
-            outputs[:, idx] = h
-        return outputs, h
+        return run_grouped_fastgrnn(
+            inputs,
+            h0,
+            params,
+            self.gate_non_linearity,
+            self.update_non_linearity,
+            reverse=reverse,
+            backend=self.backend,
+        )
 
     def forward(self, input: Tensor, h0: Optional[Tensor] = None) -> Tuple[Tensor, Tensor]:
         # input shape: [B, T, I] if batch_first else [T, B, I], B: batch_size, I: input_size
@@ -894,7 +902,9 @@ class GroupedGRNNLayer(nn.Module):
             outputs.append(bw_out)
             outstates.append(h_bw)
 
-        output = torch.cat(outputs, dim=-1).reshape(batch_size, seq_len, -1)
+        output = (torch.cat(outputs, dim=-1) if self.bidirectional else fw_out).reshape(
+            batch_size, seq_len, -1
+        )
         h = torch.stack(outstates, dim=0).permute(2, 0, 1, 3).reshape(
             self.groups * self.num_directions, batch_size, self.hidden_size
         )
@@ -1020,6 +1030,7 @@ class GroupedGRNN(nn.Module):
         nu_init: float = -4.0,
         lambda_init: float = 0.0,
         gamma_init: float = 0.999,
+        backend: str = "auto",
     ):
         super().__init__()
         kwargs = {
@@ -1036,6 +1047,7 @@ class GroupedGRNN(nn.Module):
             "nu_init": nu_init,
             "lambda_init": lambda_init,
             "gamma_init": gamma_init,
+            "backend": backend,
         }
         assert input_size % groups == 0
         assert hidden_size % groups == 0
@@ -1071,7 +1083,9 @@ class GroupedGRNN(nn.Module):
         dim0, dim1, _ = input.shape
         b = dim0 if self.batch_first else dim1
         if state is None:
-            state = self.get_h0(b, input.device)
+            state = input.new_zeros(
+                self.num_layers * self.groups * self.num_directions, b, self.hidden_size
+            )
         output = torch.zeros(
             dim0,
             dim1,

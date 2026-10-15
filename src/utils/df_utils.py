@@ -148,9 +148,18 @@ def audio_lengths_to_frame_lengths(lengths: Tensor, fft_size: int, hop_length: i
     return torch.div(lengths, hop_length, rounding_mode="floor") + 1
 
 
-def stft_with_df_config(audio: Tensor) -> Tensor:
+def stft_with_df_config(audio: Tensor, lengths: Optional[Tensor] = None) -> Tensor:
     p = stft_config()
     window = torch.hann_window(p.fft_size, device=audio.device, dtype=audio.dtype)
+    if lengths is not None and audio.dim() == 2:
+        sizes = lengths.tolist()
+        if any(size != audio.shape[-1] for size in sizes):
+            frames = audio.shape[-1] // p.hop_length + 1
+            spectra = []
+            for waveform, size in zip(audio, sizes):
+                spectrum = stft_with_df_config(waveform[:size])
+                spectra.append(torch.nn.functional.pad(spectrum, (0, 0, 0, frames - spectrum.shape[-2])))
+            return torch.stack(spectra)
     return torch.stft(
         audio,
         n_fft=p.fft_size,
@@ -161,9 +170,19 @@ def stft_with_df_config(audio: Tensor) -> Tensor:
     )
 
 
-def istft_with_df_config(spec: Tensor, length: Optional[int] = None) -> Tensor:
+def istft_with_df_config(spec: Tensor, length: Optional[int] = None,
+                        lengths: Optional[Tensor] = None) -> Tensor:
     p = stft_config()
     window = torch.hann_window(p.fft_size, device=spec.device, dtype=spec.real.dtype)
+    if lengths is not None:
+        sizes = lengths.tolist()
+        output_length = max(sizes) if length is None else length
+        waves = []
+        for spectrum, size in zip(as_complex(spec), sizes):
+            frames = size // p.hop_length + 1
+            waveform = istft_with_df_config(spectrum[:, :frames], length=size)
+            waves.append(torch.nn.functional.pad(waveform, (0, output_length - size)))
+        return torch.stack(waves)
     return torch.istft(
         as_complex(spec),
         n_fft=p.fft_size,

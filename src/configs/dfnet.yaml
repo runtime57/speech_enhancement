@@ -1,44 +1,51 @@
 defaults:
   - model: deepfilternet
   - writer: dfnet
-  - metrics: train
-  - datasets: vctk
+  - metrics: dfnet
+  - datasets: vctk_validation
   - dataloader: train
   - transforms: example
   - _self_
 optimizer:
-  _target_: torch.optim.AdamW
+  _target_: torch.optim.Adam
   lr: 1e-3
 lr_scheduler:
   _target_: torch.optim.lr_scheduler.StepLR
   gamma: 0.9
-  step_size: ${trainer.epoch_len}
+  step_size: 3
 loss_function:
   _target_: src.loss.Loss
-  mask_factor: 1.0
-  spec_factor_magnitude: 20000
-  spec_factor_complex: 20000
+  mask_factor: 0.0
+  spec_factor_magnitude: 1.0
+  spec_factor_complex: 1.0
   spec_gamma: 0.6
-  mr_factor: 0.5
-  mr_factor_complex: 0.5
-  sdr_factor: 0.1
+  spec_frequency_reduction: sum
+  mr_factor: 0.0
+  mr_factor_complex: 0.0
+  sdr_factor: 0.0
   # keep only Eq. (8): L = λ_spec * L_spec + λ_α * L_α
   lsnr_factor: 0.0
-  alpha_factor: 2.0
+  alpha_factor: 0.05
   alpha_lsnr_low: -10.0
   alpha_lsnr_high: -5.0
   mask_f_under: 1
 trainer:
+  amp: true
+  amp_dtype: float16
+  amp_init_scale: 64.0
+  lr_scheduler_interval: epoch
+  evaluation_partitions: [val]
+  skip_oom: false
   log_step: 50
   n_epochs: 100
-  epoch_len: 362
+  epoch_len: null
   device_tensors: ["noisy", "clean"] # which tensors should be on device (ex. GPU)
   resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
   device: auto # device name or "auto"
-  override: True # if True, will override the previous run with the same name
-  monitor: "max test_PESQ" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric
+  override: False # preserve previous experiments
+  monitor: "min val_loss"
   save_period: 5 # checkpoint each save_period epochs in addition to the best epoch
-  early_stop: ${trainer.n_epochs} # epochs for early stopping
+  early_stop: 10 # validation-loss patience; n_epochs remains the maximum budget
   save_dir: "saved"
   seed: 1
 

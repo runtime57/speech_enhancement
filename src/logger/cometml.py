@@ -3,6 +3,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import os
+from pathlib import Path
 
 
 class CometMLWriter:
@@ -42,6 +43,10 @@ class CometMLWriter:
         try:
             import comet_ml
 
+            key_path = Path(__file__).resolve().parents[2] / ".comet_key"
+            if not os.environ.get("COMET_API_KEY") and key_path.is_file():
+                os.environ["COMET_API_KEY"] = key_path.read_text().strip()
+
             if offline_directory is not None and mode == "offline":
                 os.environ['COMET_OFFLINE_DIRECTORY'] = offline_directory
             comet_ml.login()
@@ -73,6 +78,7 @@ class CometMLWriter:
                     log_graph=kwargs.get("log_graph", False),
                     auto_metric_logging=kwargs.get("auto_metric_logging", False),
                     auto_param_logging=kwargs.get("auto_param_logging", False),
+                    auto_output_logging=kwargs.get("auto_output_logging", None),
                 )
                 self.exp.set_name(run_name)
                 self.exp.log_parameters(parameters=project_config)
@@ -83,10 +89,16 @@ class CometMLWriter:
             logger.warning("For use comet_ml install it via \n\t pip install comet_ml")
 
         self.step = 0
+        self.epoch = None
         # the mode is usually equal to the current partition name
         # used to separate Partition1 and Partition2 metrics
         self.mode = ""
         self.timer = datetime.now()
+
+    def set_epoch(self, epoch):
+        """Attach the training epoch to every metric, independently of its step."""
+        self.epoch = int(epoch)
+        self.exp.set_epoch(self.epoch)
 
     def set_step(self, step, mode="train"):
         """
@@ -154,6 +166,7 @@ class CometMLWriter:
                 self._object_name(scalar_name): scalar,
             },
             step=self.step,
+            epoch=self.epoch,
         )
 
     def add_scalars(self, scalars):
@@ -169,6 +182,7 @@ class CometMLWriter:
                 for scalar_name, scalar in scalars.items()
             },
             step=self.step,
+            epoch=self.epoch,
         )
 
     def add_image(self, image_name, image):
@@ -260,3 +274,6 @@ class CometMLWriter:
 
     def add_embedding(self, embedding_name, embedding):
         raise NotImplementedError()
+
+    def close(self):
+        self.exp.end()

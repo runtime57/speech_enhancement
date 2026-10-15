@@ -1,0 +1,268 @@
+{
+  "torch": "2.5.1+cu121",
+  "device": "cuda",
+  "threads": 1,
+  "hardware": "NVIDIA GeForce RTX 4070",
+  "precision": "fp32",
+  "warmup": 3,
+  "iterations": 10,
+  "scope": "Full model only. Synthetic loss; no optimizer, audio preprocessing or metrics.",
+  "results": [
+    {
+      "model": "deepfilternet",
+      "batch_size": 1,
+      "frames": 200,
+      "parameters": 1695703,
+      "forward": {
+        "median_ms": 9.384790000240173,
+        "min_ms": 7.723509999777889,
+        "max_ms": 17.84423400022206
+      },
+      "forward_backward": {
+        "median_ms": 25.864906999686355,
+        "min_ms": 24.768905000200903,
+        "max_ms": 27.584200000092096
+      }
+    },
+    {
+      "model": "deepfilternetgrnn_original",
+      "batch_size": 1,
+      "frames": 200,
+      "parameters": 1046647,
+      "forward": {
+        "median_ms": 159.21327549995112,
+        "min_ms": 156.26121900004364,
+        "max_ms": 160.44024100028764
+      },
+      "forward_backward": {
+        "median_ms": 604.8818300000676,
+        "min_ms": 597.0875569992131,
+        "max_ms": 640.2768349998951
+      }
+    },
+    {
+      "model": "deepfilternetgrnn",
+      "batch_size": 1,
+      "frames": 200,
+      "parameters": 1046647,
+      "forward": {
+        "median_ms": 5.585661499935668,
+        "min_ms": 5.465252999783843,
+        "max_ms": 5.850083000041195
+      },
+      "forward_backward": {
+        "median_ms": 14.52372399990054,
+        "min_ms": 13.514049000150408,
+        "max_ms": 25.852069000393385
+      }
+    },
+    {
+      "model": "grnn_emb_128",
+      "batch_size": 1,
+      "frames": 200,
+      "parameters": 360055,
+      "forward": {
+        "median_ms": 4.108367500066379,
+        "min_ms": 3.9940409997143433,
+        "max_ms": 5.002779999813356
+      },
+      "forward_backward": {
+        "median_ms": 12.77615999970294,
+        "min_ms": 12.6316850000876,
+        "max_ms": 13.553173999753199
+      }
+    },
+    {
+      "model": "deepfilternet",
+      "batch_size": 1,
+      "frames": 400,
+      "parameters": 1695703,
+      "forward": {
+        "median_ms": 9.182090499962214,
+        "min_ms": 9.073291999811772,
+        "max_ms": 9.813691999625007
+      },
+      "forward_backward": {
+        "median_ms": 30.62795650021144,
+        "min_ms": 30.325278999953298,
+        "max_ms": 31.264591999388358
+      }
+    },
+    {
+      "model": "deepfilternetgrnn_original",
+      "batch_size": 1,
+      "frames": 400,
+      "parameters": 1046647,
+      "forward": {
+        "median_ms": 301.6047400001298,
+        "min_ms": 298.0004330001975,
+        "max_ms": 312.61504599933687
+      },
+      "forward_backward": {
+        "median_ms": 1238.619432499945,
+        "min_ms": 1212.769101000049,
+        "max_ms": 1293.2580699998653
+      }
+    },
+    {
+      "model": "deepfilternetgrnn",
+      "batch_size": 1,
+      "frames": 400,
+      "parameters": 1046647,
+      "forward": {
+        "median_ms": 8.23592999995526,
+        "min_ms": 8.065279999755148,
+        "max_ms": 8.606929000052332
+      },
+      "forward_backward": {
+        "median_ms": 17.25147800061677,
+        "min_ms": 16.574334999859275,
+        "max_ms": 18.381492999651527
+      }
+    },
+    {
+      "model": "grnn_emb_128",
+      "batch_size": 1,
+      "frames": 400,
+      "parameters": 360055,
+      "forward": {
+        "median_ms": 4.322157999922638,
+        "min_ms": 4.239786999278294,
+        "max_ms": 4.546729999674426
+      },
+      "forward_backward": {
+        "median_ms": 14.16715950017533,
+        "min_ms": 13.940289000856865,
+        "max_ms": 14.54884399936418
+      }
+    },
+    {
+      "model": "deepfilternet",
+      "batch_size": 32,
+      "frames": 200,
+      "parameters": 1695703,
+      "forward": {
+        "median_ms": 23.350039499746345,
+        "min_ms": 23.00072599973646,
+        "max_ms": 23.611937000168837
+      },
+      "forward_backward": {
+        "median_ms": 79.50329699997383,
+        "min_ms": 79.16899799965904,
+        "max_ms": 80.2890289996867
+      }
+    },
+    {
+      "model": "deepfilternetgrnn_original",
+      "batch_size": 32,
+      "frames": 200,
+      "parameters": 1046647,
+      "forward": {
+        "median_ms": 163.1920574996002,
+        "min_ms": 154.25068999957148,
+        "max_ms": 168.14880000038102
+      },
+      "forward_backward": {
+        "median_ms": 652.4443989997053,
+        "min_ms": 638.6404310005673,
+        "max_ms": 723.9736020001146
+      }
+    },
+    {
+      "model": "deepfilternetgrnn",
+      "batch_size": 32,
+      "frames": 200,
+      "parameters": 1046647,
+      "forward": {
+        "median_ms": 19.641780500023742,
+        "min_ms": 19.47503700012021,
+        "max_ms": 19.878733000041393
+      },
+      "forward_backward": {
+        "median_ms": 66.35682450041713,
+        "min_ms": 66.08588099970802,
+        "max_ms": 66.78216099953715
+      }
+    },
+    {
+      "model": "grnn_emb_128",
+      "batch_size": 32,
+      "frames": 200,
+      "parameters": 360055,
+      "forward": {
+        "median_ms": 17.981112499910523,
+        "min_ms": 17.757013999471383,
+        "max_ms": 18.24403800037544
+      },
+      "forward_backward": {
+        "median_ms": 61.754805999498785,
+        "min_ms": 61.21557300048153,
+        "max_ms": 62.296864000018104
+      }
+    },
+    {
+      "model": "deepfilternet",
+      "batch_size": 32,
+      "frames": 400,
+      "parameters": 1695703,
+      "forward": {
+        "median_ms": 46.75336449963652,
+        "min_ms": 46.60831000001053,
+        "max_ms": 47.13506799998868
+      },
+      "forward_backward": {
+        "median_ms": 161.3166354995883,
+        "min_ms": 160.87702100048773,
+        "max_ms": 161.60531300010916
+      }
+    },
+    {
+      "model": "deepfilternetgrnn_original",
+      "batch_size": 32,
+      "frames": 400,
+      "parameters": 1046647,
+      "forward": {
+        "median_ms": 345.13339349996386,
+        "min_ms": 331.9787810005437,
+        "max_ms": 369.0591329996096
+      },
+      "forward_backward": {
+        "median_ms": 1876.3327649999155,
+        "min_ms": 1845.967644000666,
+        "max_ms": 1956.4963959992383
+      }
+    },
+    {
+      "model": "deepfilternetgrnn",
+      "batch_size": 32,
+      "frames": 400,
+      "parameters": 1046647,
+      "forward": {
+        "median_ms": 43.364664999899105,
+        "min_ms": 43.1086980006512,
+        "max_ms": 44.811515000219515
+      },
+      "forward_backward": {
+        "median_ms": 143.70168799996463,
+        "min_ms": 142.32986600018194,
+        "max_ms": 146.87617999970826
+      }
+    },
+    {
+      "model": "grnn_emb_128",
+      "batch_size": 32,
+      "frames": 400,
+      "parameters": 360055,
+      "forward": {
+        "median_ms": 38.511016499796824,
+        "min_ms": 38.186469000720535,
+        "max_ms": 39.039709999997285
+      },
+      "forward_backward": {
+        "median_ms": 129.7646865000388,
+        "min_ms": 129.14343800002825,
+        "max_ms": 132.43072400018718
+      }
+    }
+  ]
+}

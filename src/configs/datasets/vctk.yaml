@@ -1,10 +1,10 @@
 train:
   _target_: src.datasets.VCTKDataset
-  rawdata_path: "/opt/software/datasets/VCTK/DS_10283_2791"
+  rawdata_path: "${hydra:runtime.cwd}/data"
   name: "train"
   instance_transforms: ${transforms.instance_transforms.inference}
 test:
   _target_: src.datasets.VCTKDataset
-  rawdata_path: "/opt/software/datasets/VCTK/DS_10283_2791"
+  rawdata_path: "${hydra:runtime.cwd}/data"
   name: "test"
   instance_transforms: ${transforms.instance_transforms.inference}

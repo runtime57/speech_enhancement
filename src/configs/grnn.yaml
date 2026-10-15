@@ -29,6 +29,9 @@ loss_function:
   alpha_lsnr_high: -5.0
   mask_f_under: 1
 trainer:
+  amp: true
+  amp_dtype: float16
+  amp_init_scale: 1024.0
   log_step: 50
   n_epochs: 100
   epoch_len: 362

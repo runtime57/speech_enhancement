@@ -1,0 +1,19 @@
+defaults:
+  - dfnet
+  - override writer: tensorboard
+  - override datasets: vctk_full
+  - _self_
+
+trainer:
+  epoch_len: null
+  drop_last: false
+  evaluation_partitions: [val, test]
+  n_epochs: 100
+  early_stop: 100
+  save_period: 1
+  record_epoch_counts: true
+  skip_oom: false
+
+writer:
+  project_name: speech_enhancement
+  run_name: dfnet_full

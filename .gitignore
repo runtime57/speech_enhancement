@@ -81,6 +81,7 @@ celerybeat-schedule
 
 # dotenv
 .env
+.comet_key
 
 # virtualenv
 .venv

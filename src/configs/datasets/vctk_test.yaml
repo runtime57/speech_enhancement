@@ -1,0 +1,5 @@
+test:
+  _target_: src.datasets.VCTKDataset
+  rawdata_path: "${hydra:runtime.cwd}/data"
+  name: test
+  instance_transforms: ${transforms.instance_transforms.inference}

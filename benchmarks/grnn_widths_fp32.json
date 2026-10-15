@@ -1,0 +1,172 @@
+{
+  "torch": "2.5.1+cu121",
+  "device": "cuda",
+  "threads": 1,
+  "hardware": "NVIDIA GeForce RTX 4070",
+  "precision": "fp32",
+  "warmup": 3,
+  "iterations": 10,
+  "scope": "Full model only. Synthetic loss; no optimizer, audio preprocessing or metrics.",
+  "results": [
+    {
+      "model": "grnn_emb_256",
+      "batch_size": 1,
+      "frames": 200,
+      "parameters": 552055,
+      "forward": {
+        "median_ms": 4.141259500102024,
+        "min_ms": 4.033473000163212,
+        "max_ms": 5.301750000398897
+      },
+      "forward_backward": {
+        "median_ms": 12.979953500234842,
+        "min_ms": 12.39426999927673,
+        "max_ms": 14.145443999950658
+      }
+    },
+    {
+      "model": "grnn_emb_384",
+      "batch_size": 1,
+      "frames": 200,
+      "parameters": 780919,
+      "forward": {
+        "median_ms": 4.210334499930468,
+        "min_ms": 4.0877569999793195,
+        "max_ms": 5.449651000162703
+      },
+      "forward_backward": {
+        "median_ms": 13.729889999922307,
+        "min_ms": 13.345080000362941,
+        "max_ms": 15.580861000671575
+      }
+    },
+    {
+      "model": "rebalancedgrnn",
+      "batch_size": 1,
+      "frames": 200,
+      "parameters": 1038519,
+      "forward": {
+        "median_ms": 5.6583769996905176,
+        "min_ms": 5.580529000326351,
+        "max_ms": 5.957881999165693
+      },
+      "forward_backward": {
+        "median_ms": 19.159077500262356,
+        "min_ms": 18.084071999510343,
+        "max_ms": 20.03643199986982
+      }
+    },
+    {
+      "model": "rebalanced2grnn",
+      "batch_size": 1,
+      "frames": 200,
+      "parameters": 1092507,
+      "forward": {
+        "median_ms": 5.647800500355515,
+        "min_ms": 5.4906389996176586,
+        "max_ms": 6.739630000083707
+      },
+      "forward_backward": {
+        "median_ms": 20.5099214999791,
+        "min_ms": 20.10602399968775,
+        "max_ms": 47.10906200034515
+      }
+    },
+    {
+      "model": "rebalanced3grnn",
+      "batch_size": 1,
+      "frames": 200,
+      "parameters": 1156151,
+      "forward": {
+        "median_ms": 5.426182499832066,
+        "min_ms": 5.398524000156613,
+        "max_ms": 5.510117000085302
+      },
+      "forward_backward": {
+        "median_ms": 20.20231699998476,
+        "min_ms": 19.250051000199164,
+        "max_ms": 40.163155999835
+      }
+    },
+    {
+      "model": "grnn_emb_256",
+      "batch_size": 32,
+      "frames": 200,
+      "parameters": 552055,
+      "forward": {
+        "median_ms": 17.67521650026538,
+        "min_ms": 17.50983800047834,
+        "max_ms": 17.90558399989095
+      },
+      "forward_backward": {
+        "median_ms": 61.30256799997369,
+        "min_ms": 61.07327100016846,
+        "max_ms": 61.66359100006957
+      }
+    },
+    {
+      "model": "grnn_emb_384",
+      "batch_size": 32,
+      "frames": 200,
+      "parameters": 780919,
+      "forward": {
+        "median_ms": 19.070369000019127,
+        "min_ms": 18.7290160001794,
+        "max_ms": 19.328048999341263
+      },
+      "forward_backward": {
+        "median_ms": 64.01223800003208,
+        "min_ms": 63.80143399928784,
+        "max_ms": 64.48911799998314
+      }
+    },
+    {
+      "model": "rebalancedgrnn",
+      "batch_size": 32,
+      "frames": 200,
+      "parameters": 1038519,
+      "forward": {
+        "median_ms": 16.814551000152278,
+        "min_ms": 16.665655999531737,
+        "max_ms": 16.92961699973239
+      },
+      "forward_backward": {
+        "median_ms": 58.7331739993715,
+        "min_ms": 58.662061000177346,
+        "max_ms": 62.60285899952578
+      }
+    },
+    {
+      "model": "rebalanced2grnn",
+      "batch_size": 32,
+      "frames": 200,
+      "parameters": 1092507,
+      "forward": {
+        "median_ms": 15.602445500007889,
+        "min_ms": 15.34213400009321,
+        "max_ms": 15.833366000151727
+      },
+      "forward_backward": {
+        "median_ms": 59.003552999911335,
+        "min_ms": 58.65125899981649,
+        "max_ms": 59.71874300030322
+      }
+    },
+    {
+      "model": "rebalanced3grnn",
+      "batch_size": 32,
+      "frames": 200,
+      "parameters": 1156151,
+      "forward": {
+        "median_ms": 12.971580999874277,
+        "min_ms": 12.865980000242416,
+        "max_ms": 13.171540000257664
+      },
+      "forward_backward": {
+        "median_ms": 48.688411000057386,
+        "min_ms": 48.37271199994575,
+        "max_ms": 49.650181000288285
+      }
+    }
+  ]
+}

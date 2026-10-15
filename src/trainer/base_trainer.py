@@ -1,4 +1,7 @@
 from abc import abstractmethod
+import json
+import os
+import time
 
 import torch
 from numpy import inf
@@ -8,6 +11,7 @@ from tqdm.auto import tqdm
 from src.datasets.data_utils import inf_loop
 from src.metrics.tracker import MetricTracker
 from src.utils.io_utils import ROOT_PATH
+from src.utils.precision import amp_settings
 
 
 class BaseTrainer:
@@ -61,6 +65,12 @@ class BaseTrainer:
         self.cfg_trainer = self.config.trainer
 
         self.device = device
+        self.amp_enabled, self.amp_dtype = amp_settings(self.cfg_trainer, device)
+        self.grad_scaler = torch.amp.GradScaler(
+            "cuda",
+            enabled=self.amp_enabled and self.amp_dtype == torch.float16,
+            init_scale=float(self.cfg_trainer.get("amp_init_scale", 1024.0)),
+        )
         self.skip_oom = skip_oom
 
         self.logger = logger
@@ -70,7 +80,7 @@ class BaseTrainer:
         self.criterion = criterion
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
-        self.batch_transforms = batch_transforms
+        self.batch_transforms = batch_transforms or {}
 
         # define dataloaders
         self.train_dataloader = dataloaders["train"]
@@ -83,13 +93,17 @@ class BaseTrainer:
             self.epoch_len = epoch_len
 
         self.evaluation_dataloaders = {
-            k: v for k, v in dataloaders.items() if k != "train"
+            k: v for k, v in dataloaders.items()
+            if k != "train" and k in self.cfg_trainer.get("evaluation_partitions", dataloaders.keys())
         }
 
         # define epochs
         self._last_epoch = 0  # required for saving on interruption
         self.start_epoch = 1
         self.epochs = self.cfg_trainer.n_epochs
+        self.evaluation_period = int(self.cfg_trainer.get("evaluation_period", 1))
+        if self.evaluation_period < 1:
+            raise ValueError("evaluation_period must be positive")
 
         # configuration to monitor model performance and save best
 
@@ -164,7 +178,18 @@ class BaseTrainer:
         not_improved_count = 0
         for epoch in range(self.start_epoch, self.epochs + 1):
             self._last_epoch = epoch
+            self._epoch_complete = False
             result = self._train_epoch(epoch)
+            if self.lr_scheduler is not None and self.cfg_trainer.get("lr_scheduler_interval") == "epoch":
+                self.lr_scheduler.step()
+
+            # Evaluation is outside the train epoch and never advances train steps.
+            evaluate = epoch % self.evaluation_period == 0 or epoch == self.epochs
+            if evaluate:
+                for part, dataloader in self.evaluation_dataloaders.items():
+                    partition_result = self._evaluation_epoch(epoch, part, dataloader)
+                    result.update({f"{part}_{name}": value for name, value in partition_result.items()})
+            self._epoch_complete = True
 
             # save logged information into logs dict
             logs = {"epoch": epoch}
@@ -173,23 +198,29 @@ class BaseTrainer:
             # print logged information to the screen
             for key, value in logs.items():
                 self.logger.info(f"    {key:15s}: {value}")
-
             # evaluate model performance according to configured metric,
             # save best checkpoint as model_best
-            best, stop_process, not_improved_count = self._monitor_performance(
-                logs, not_improved_count
-            )
+            best, stop_process = False, False
+            if self.mnt_mode == "off" or self.mnt_metric in logs:
+                best, stop_process, not_improved_count = self._monitor_performance(
+                    logs, not_improved_count
+                )
 
             if epoch % self.save_period == 0 or best:
-                self._save_checkpoint(epoch, save_best=best, only_best=True)
+                self._save_checkpoint(epoch, save_best=best,
+                                      only_best=not self.cfg_trainer.get("record_epoch_counts", False))
+
+            if self.cfg_trainer.get("record_epoch_counts", False):
+                self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+                with (self.checkpoint_dir / "epoch_metrics.jsonl").open("a") as output:
+                    output.write(json.dumps(logs, allow_nan=False) + "\n")
 
             if stop_process:  # early_stop
                 break
 
     def _train_epoch(self, epoch):
         """
-        Training logic for an epoch, including logging and evaluation on
-        non-train partitions.
+        A training epoch consists only of train batches. Evaluation is separate.
 
         Args:
             epoch (int): current training epoch.
@@ -200,6 +231,10 @@ class BaseTrainer:
         self.is_train = True
         self.model.train()
         self.train_metrics.reset()
+        started = time.monotonic()
+        processed_samples, processed_batches = 0, 0
+        if hasattr(self.writer, "set_epoch"):
+            self.writer.set_epoch(epoch)
         self.writer.set_step((epoch - 1) * self.epoch_len)
         self.writer.add_scalar("epoch", epoch)
         for batch_idx, batch in enumerate(
@@ -219,7 +254,13 @@ class BaseTrainer:
                 else:
                     raise e
 
-            self.train_metrics.update("grad_norm", self._get_grad_norm())
+            if batch.get("optimizer_stepped", True):
+                self.train_metrics.update("grad_norm", self._get_grad_norm())
+            else:
+                self.logger.warning("AMP skipped optimizer step at batch %s; excluding its nonfinite gradients from grad_norm", batch_idx)
+            processed_batches += 1
+            if "noisy" in batch:
+                processed_samples += batch["noisy"].shape[0]
 
             # log current results
             if batch_idx % self.log_step == 0:
@@ -234,19 +275,22 @@ class BaseTrainer:
                 )
                 self._log_scalars(self.train_metrics)
                 self._log_batch(batch_idx, batch)
-                # we don't want to reset train metrics at the start of every epoch
-                # because we are interested in recent train metrics
-                last_train_metrics = self.train_metrics.result()
-                self.train_metrics.reset()
+                # Preserve cumulative metrics through the end of the epoch.
             if batch_idx + 1 >= self.epoch_len:
                 break
 
-        logs = last_train_metrics
-
-        # Run val/test
-        for part, dataloader in self.evaluation_dataloaders.items():
-            val_logs = self._evaluation_epoch(epoch, part, dataloader)
-            logs.update(**{f"{part}_{name}": value for name, value in val_logs.items()})
+        logs = self.train_metrics.result()
+        if self.cfg_trainer.get("record_epoch_counts", False):
+            expected_samples = len(self.train_dataloader.dataset)
+            if processed_samples != expected_samples or processed_batches != self.epoch_len:
+                raise RuntimeError(f"Incomplete train epoch: {processed_samples}/{expected_samples} "
+                                   f"samples, {processed_batches}/{self.epoch_len} batches")
+            logs.update(samples=processed_samples, batches=processed_batches,
+                        seconds=time.monotonic() - started)
+        # Keep a single complete-epoch series separate from cumulative batch logs.
+        self.writer.set_step(epoch * self.epoch_len, "train")
+        for name, value in logs.items():
+            self.writer.add_scalar(f"epoch/{name}", value)
 
         return logs
 
@@ -264,6 +308,10 @@ class BaseTrainer:
         self.is_train = False
         self.model.eval()
         self.evaluation_metrics.reset()
+        started = time.monotonic()
+        processed_samples = 0
+        if hasattr(self.writer, "set_epoch"):
+            self.writer.set_epoch(epoch)
         with torch.no_grad():
             for batch_idx, batch in tqdm(
                 enumerate(dataloader),
@@ -275,13 +323,22 @@ class BaseTrainer:
                     metrics=self.evaluation_metrics,
                     step=None
                 )
+                if "noisy" in batch:
+                    processed_samples += batch["noisy"].shape[0]
             self.writer.set_step(epoch * self.epoch_len, part)
             self._log_scalars(self.evaluation_metrics)
+            for name, value in self.evaluation_metrics.result().items():
+                self.writer.add_scalar(f"epoch/{name}", value)
             self._log_batch(
                 batch_idx, batch, part
             )  # log only the last batch during inference
 
-        return self.evaluation_metrics.result()
+        result = self.evaluation_metrics.result()
+        if self.cfg_trainer.get("record_epoch_counts", False):
+            if processed_samples != len(dataloader.dataset):
+                raise RuntimeError(f"Incomplete {part} evaluation: {processed_samples}/{len(dataloader.dataset)}")
+            result.update(samples=processed_samples, seconds=time.monotonic() - started)
+        return result
 
     def _monitor_performance(self, logs, not_improved_count):
         """
@@ -473,16 +530,23 @@ class BaseTrainer:
             "lr_scheduler": self.lr_scheduler.state_dict(),
             "monitor_best": self.mnt_best,
             "config": self.config,
+            "grad_scaler": self.grad_scaler.state_dict(),
+            "epoch_complete": getattr(self, "_epoch_complete", False),
+            "epoch_len": self.epoch_len,
         }
         filename = str(self.checkpoint_dir / f"checkpoint-epoch{epoch}.pth")
         if not (only_best and save_best):
-            torch.save(state, filename)
+            temporary = filename + ".tmp"
+            torch.save(state, temporary)
+            os.replace(temporary, filename)
             if self.config.writer.log_checkpoints:
                 self.writer.add_checkpoint(filename, str(self.checkpoint_dir.parent))
             self.logger.info(f"Saving checkpoint: {filename} ...")
         if save_best:
             best_path = str(self.checkpoint_dir / "model_best.pth")
-            torch.save(state, best_path)
+            temporary = best_path + ".tmp"
+            torch.save(state, temporary)
+            os.replace(temporary, best_path)
             if self.config.writer.log_checkpoints:
                 self.writer.add_checkpoint(best_path, str(self.checkpoint_dir.parent))
             self.logger.info("Saving current best: model_best.pth ...")
@@ -503,6 +567,7 @@ class BaseTrainer:
         self.logger.info(f"Loading checkpoint: {resume_path} ...")
         checkpoint = torch.load(resume_path, self.device, weights_only=False)
         self.start_epoch = checkpoint["epoch"] + 1
+        self._last_epoch = checkpoint["epoch"]
         self.mnt_best = checkpoint["monitor_best"]
 
         # load architecture params from checkpoint.
@@ -526,6 +591,8 @@ class BaseTrainer:
         else:
             self.optimizer.load_state_dict(checkpoint["optimizer"])
             self.lr_scheduler.load_state_dict(checkpoint["lr_scheduler"])
+            if checkpoint.get("grad_scaler") and self.grad_scaler.is_enabled():
+                self.grad_scaler.load_state_dict(checkpoint["grad_scaler"])
 
         self.logger.info(
             f"Checkpoint loaded. Resume training from epoch {self.start_epoch}"
