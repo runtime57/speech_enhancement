@@ -49,6 +49,45 @@ body {
   font-size: 1rem;
 }
 
+.hero .protocol {
+  margin-top: 12px;
+  font-size: .9rem;
+}
+
+a {
+  color: #b6c8ff;
+  text-underline-offset: 3px;
+}
+
+.hero > a {
+  display: inline-block;
+  margin-top: 16px;
+}
+
+.model-info, .player-status, footer {
+  color: var(--muted);
+  font-size: .9rem;
+  line-height: 1.6;
+}
+
+.model-info {
+  min-height: 1.6em;
+}
+
+.player-status:empty {
+  display: none;
+}
+
+footer {
+  margin-top: 28px;
+  text-align: center;
+}
+
+button:focus-visible, a:focus-visible, input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
 .samples {
   display: grid;
   gap: 26px;
@@ -96,6 +135,7 @@ body {
 .spectrogram {
   display: block;
   width: 100%;
+  height: auto;
   border-radius: 16px;
   background: #10172c;
 }
@@ -160,6 +200,11 @@ body {
 
 .play-btn:hover {
   transform: scale(1.04);
+}
+
+.play-btn:disabled {
+  opacity: .5;
+  cursor: wait;
 }
 
 .progress-area {

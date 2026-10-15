@@ -3,10 +3,11 @@ defaults:
   - _self_
 
 denoise:
-  noisy_dir: "demo/audio/noisy"
-  output_dir: "demo/audio/enhanced/dfnet"
+  precision: fp32 # fp32, amp (float32 weights), or fp16 (half weights)
+  noisy_dir: "audio/noisy"
+  output_dir: "audio/enhanced/dfnet"
   from_pretrained: "models/dfnet.pth"
-  device: auto
+  device: cpu
   seed: 1
 
 stft:

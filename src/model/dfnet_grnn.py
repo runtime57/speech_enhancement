@@ -49,6 +49,9 @@ class EncoderGRNN(nn.Module):
             groups=p.gru_groups,
             shuffle=p.group_shuffle,
             add_outputs=True,
+            w_rank=p.emb_grnn_w_rank,
+            u_rank=p.emb_grnn_u_rank,
+            backend=p.grnn_backend,
         )
         self.lsnr_fc = nn.Sequential(nn.Linear(self.emb_out_dim, 1), nn.Sigmoid())
         self.lsnr_scale = p.lsnr_max - p.lsnr_min
@@ -149,6 +152,9 @@ class DfDecoderGRNN(nn.Module):
             groups=p.gru_groups,
             shuffle=p.group_shuffle,
             add_outputs=True,
+            w_rank=p.df_grnn_w_rank,
+            u_rank=p.df_grnn_u_rank,
+            backend=p.grnn_backend,
         )
         self.df_fc_out = nn.Sequential(
             nn.Linear(self.df_n_hidden, self.df_bins * self.df_order * 2), nn.Tanh()
@@ -187,8 +193,13 @@ class DfNetGRNN(nn.Module):
         gru_groups: int = 8,
         lin_groups: int = 8,
         group_shuffle: bool = True,
+        emb_grnn_w_rank: Optional[int] = None,
+        emb_grnn_u_rank: Optional[int] = None,
+        df_grnn_w_rank: Optional[int] = None,
+        df_grnn_u_rank: Optional[int] = None,
         dfop_method: str = "real_unfold",
         mask_pf: bool = False,
+        grnn_backend: str = "auto",
     ):
         super().__init__()
 
@@ -222,6 +233,11 @@ class DfNetGRNN(nn.Module):
         self.gru_groups = gru_groups
         self.lin_groups = lin_groups
         self.group_shuffle = group_shuffle
+        self.emb_grnn_w_rank = emb_grnn_w_rank
+        self.emb_grnn_u_rank = emb_grnn_u_rank
+        self.df_grnn_w_rank = df_grnn_w_rank
+        self.df_grnn_u_rank = df_grnn_u_rank
+        self.grnn_backend = grnn_backend
         self.dfop_method = dfop_method
         self.mask_pf = mask_pf
         self.run_df = run_df

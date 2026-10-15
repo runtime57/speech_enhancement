@@ -7,10 +7,16 @@ from hydra.utils import instantiate, to_absolute_path
 from omegaconf import OmegaConf
 
 from src.utils.config_utils import setup_config, stft_config
-from src.utils.df_utils import as_complex, exp_unit_norm
+from src.utils.df_utils import (
+    audio_lengths_to_frame_lengths,
+    exp_unit_norm,
+    istft_with_df_config,
+    stft_with_df_config,
+)
 from src.utils.erb_utils import compute_erb_feats_from_stft
 from src.utils.init_utils import set_random_seed
 from src.utils.io_utils import safe_torchaudio_load, safe_torchaudio_save
+from src.utils.precision import model_autocast, set_inference_precision
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -66,34 +72,37 @@ def _list_audio_files(directory: Path) -> list[Path]:
 
 
 @torch.no_grad()
-def _denoise_waveform(model: torch.nn.Module, noisy: torch.Tensor) -> torch.Tensor:
+def _denoise_waveform(model: torch.nn.Module, noisy: torch.Tensor, precision: str = "fp32") -> torch.Tensor:
     p = stft_config()
 
-    noisy_stft = torch.stft(
-        noisy,
-        n_fft=int(p.fft_size),
-        hop_length=int(p.hop_length),
-        return_complex=False,
-    )  # [B,F,T,2]
+    noisy_stft = stft_with_df_config(noisy)  # [B,F,T,2]
 
     def to_spec(x: torch.Tensor) -> torch.Tensor:
         return x.unsqueeze(1).permute(0, 1, 3, 2, 4).contiguous()  # [B,1,T,F,2]
 
     noisy_spec = to_spec(noisy_stft)
-    feat_erb = compute_erb_feats_from_stft(noisy_stft)
+    lengths = torch.full(
+        (noisy.shape[0],),
+        noisy.shape[-1],
+        device=noisy.device,
+        dtype=torch.long,
+    )
+    frame_lengths = audio_lengths_to_frame_lengths(lengths, int(p.fft_size), int(p.hop_length))
+    feat_erb = compute_erb_feats_from_stft(noisy_stft, lengths_frames=frame_lengths)
 
     feat_spec = noisy_spec[:, :, :, : int(p.nb_df), :]
-    feat_spec, _ = exp_unit_norm(feat_spec)
+    feat_spec, _ = exp_unit_norm(feat_spec, lengths=frame_lengths)
 
-    enh, *_ = model(spec=noisy_spec, feat_erb=feat_erb, feat_spec=feat_spec)
+    model_dtype = next(model.parameters()).dtype
+    with model_autocast(noisy.device, enabled=precision == "amp"):
+        enh, *_ = model(
+            spec=noisy_spec,
+            feat_erb=feat_erb.to(model_dtype),
+            feat_spec=feat_spec.to(model_dtype),
+        )
 
-    enh_spec = enh.squeeze(1).permute(0, 2, 1, 3).contiguous()  # [B,F,T,2]
-    enh_wav = torch.istft(
-        as_complex(enh_spec),
-        n_fft=int(p.fft_size),
-        hop_length=int(p.hop_length),
-        length=noisy.shape[-1],
-    )
+    enh_spec = enh.float().squeeze(1).permute(0, 2, 1, 3).contiguous()  # [B,F,T,2]
+    enh_wav = istft_with_df_config(enh_spec, length=noisy.shape[-1])
     return enh_wav
 
 
@@ -103,11 +112,12 @@ def _process_file(
     output_path: Path,
     device: str,
     sr: int,
+    precision: str = "fp32",
 ) -> None:
     noisy_wav, _ = safe_torchaudio_load(input_path, target_sr=sr, mono=True)  # [T]
     noisy_wav = noisy_wav.unsqueeze(0).to(device)  # [B,T]
 
-    enh_wav = _denoise_waveform(model, noisy=noisy_wav).cpu().clamp(-1.0, 1.0)  # [B,T]
+    enh_wav = _denoise_waveform(model, noisy=noisy_wav, precision=precision).cpu().clamp(-1.0, 1.0)
 
     output_path.parent.mkdir(exist_ok=True, parents=True)
     safe_torchaudio_save(output_path, enh_wav, sr=sr)
@@ -131,6 +141,8 @@ def main(config) -> None:
 
     checkpoint_path = _resolve_checkpoint_path(config)
     _load_model_weights(model, checkpoint_path=checkpoint_path, device=device)
+    precision = str(OmegaConf.select(config, "denoise.precision") or "fp32")
+    set_inference_precision(model, precision)
 
     p = stft_config()
     sr = int(p.sr)
@@ -153,6 +165,7 @@ def main(config) -> None:
     input_files = _list_audio_files(noisy_dir)
 
     print(f"Using device: {device}")
+    print(f"Precision: {precision}")
     print(f"Checkpoint: {checkpoint_path}")
     print(f"Input directory: {noisy_dir}")
     print(f"Output directory: {output_dir}")
@@ -166,6 +179,7 @@ def main(config) -> None:
             output_path=output_path,
             device=device,
             sr=sr,
+            precision=precision,
         )
 
     print("Done.")

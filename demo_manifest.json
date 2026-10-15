@@ -1,0 +1,445 @@
+{
+  "schema_version": 1,
+  "updated_at_utc": "2026-10-15T18:19:13.917838+00:00",
+  "checkpoint_epoch": 50,
+  "sample_rate": 16000,
+  "precision": "FP32, CPU, batch 1",
+  "spectrogram": {
+    "n_fft": 512,
+    "hop_length": 128,
+    "window": "Hann",
+    "range_db": [
+      -80,
+      0
+    ],
+    "reference": "One peak magnitude shared by all nine variants of each sample"
+  },
+  "models": [
+    {
+      "id": "dfnet",
+      "label": "DFNet (grouped GRU)",
+      "epoch": 50,
+      "parameters": 1695703,
+      "run_name": "dfnet_full_20261014",
+      "weights_url": "models/dfnet.pth",
+      "weights_sha256": "b84aeeb568cb070ba7fb020b47aedc0f2f8c6d789d81c9bc44cca910f2b94713",
+      "source_checkpoint_sha256": "6256615bdee3b4b94b0dfe5055df6df7706979995d9ad21079b9853f4d643b04",
+      "inference_config": {
+        "model": {
+          "_target_": "src.model.DfNet",
+          "mask_pf": true
+        },
+        "stft": {
+          "sr": 16000,
+          "fft_size": 320,
+          "hop_length": 160,
+          "nb_erb": 24,
+          "nb_df": 96,
+          "norm_tau": 1,
+          "lsnr_max": 35,
+          "lsnr_min": -15,
+          "min_nb_freqs": 1,
+          "df_order": 5,
+          "df_lookahead": 1,
+          "pad_mode": "input"
+        }
+      }
+    },
+    {
+      "id": "grnn",
+      "label": "FastGRNN · emb 512",
+      "epoch": 50,
+      "parameters": 1046647,
+      "run_name": "grnn_full_20261014",
+      "weights_url": "models/grnn.pth",
+      "weights_sha256": "ef5dfaf2b119629131fab13eadd624b77abe9f866cd93d6c7befc8a785ffd48b",
+      "source_checkpoint_sha256": "ef513fdc3fc42e8059a441f27d62cfcc3383f47a960ac8a07ff88c1b63862de7",
+      "inference_config": {
+        "model": {
+          "_target_": "src.model.DfNetGRNN",
+          "mask_pf": true,
+          "grnn_backend": "torch"
+        },
+        "stft": {
+          "sr": 16000,
+          "fft_size": 320,
+          "hop_length": 160,
+          "nb_erb": 24,
+          "nb_df": 96,
+          "norm_tau": 1,
+          "lsnr_max": 35,
+          "lsnr_min": -15,
+          "min_nb_freqs": 1,
+          "df_order": 5,
+          "df_lookahead": 1,
+          "pad_mode": "input"
+        }
+      }
+    },
+    {
+      "id": "grnn_emb_256",
+      "label": "FastGRNN · emb 256",
+      "epoch": 50,
+      "parameters": 552055,
+      "run_name": "grnn_emb_256_full_20261014",
+      "weights_url": "models/grnn_emb_256.pth",
+      "weights_sha256": "ce59563047dacf85a9f2f36717dae243ac1edbceedfe9f12666463e0cb0d040e",
+      "source_checkpoint_sha256": "2ce3ec60bfe7f8fdb57bba131a976ded4cffa31ee703a88ee998afb010c1f203",
+      "inference_config": {
+        "model": {
+          "_target_": "src.model.DfNetGRNN",
+          "mask_pf": true,
+          "df_hidden_dim": 256,
+          "emb_hidden_dim": 256,
+          "grnn_backend": "torch"
+        },
+        "stft": {
+          "sr": 16000,
+          "fft_size": 320,
+          "hop_length": 160,
+          "nb_erb": 24,
+          "nb_df": 96,
+          "norm_tau": 1,
+          "lsnr_max": 35,
+          "lsnr_min": -15,
+          "min_nb_freqs": 1,
+          "df_order": 5,
+          "df_lookahead": 1,
+          "pad_mode": "input"
+        }
+      }
+    },
+    {
+      "id": "grnn_emb_128",
+      "label": "FastGRNN · emb 128",
+      "epoch": 50,
+      "parameters": 360055,
+      "run_name": "grnn_emb_128_full_50e_eval5_20261015",
+      "weights_url": "models/grnn_emb_128.pth",
+      "weights_sha256": "31faf35e98deebc6ce3f00dc8a5412f4c9c4dae313634366bfdb4dec587f92f3",
+      "source_checkpoint_sha256": "e34172bae24a1a218179fd452448bf4014705431199d953bbe38da07ba863a86",
+      "inference_config": {
+        "model": {
+          "_target_": "src.model.DfNetGRNN",
+          "mask_pf": true,
+          "df_hidden_dim": 128,
+          "emb_hidden_dim": 128,
+          "grnn_backend": "torch"
+        },
+        "stft": {
+          "sr": 16000,
+          "fft_size": 320,
+          "hop_length": 160,
+          "nb_erb": 24,
+          "nb_df": 96,
+          "norm_tau": 1,
+          "lsnr_max": 35,
+          "lsnr_min": -15,
+          "min_nb_freqs": 1,
+          "df_order": 5,
+          "df_lookahead": 1,
+          "pad_mode": "input"
+        }
+      }
+    },
+    {
+      "id": "rebalanced",
+      "label": "Rebalanced-1",
+      "epoch": 50,
+      "parameters": 1038519,
+      "run_name": "grnn_rebalanced_full_50e_eval5_20261015",
+      "weights_url": "models/rebalanced_1.pth",
+      "weights_sha256": "020722ca6a0332b7e7995d97461ebfb5e7e17c45449f0ffb3dddb800679c2957",
+      "source_checkpoint_sha256": "ff864d59d1429a680921a64dbb117524d9e8991f19b911be925f8229e61eb558",
+      "inference_config": {
+        "model": {
+          "_target_": "src.model.DfNetGRNN",
+          "conv_ch": 48,
+          "emb_hidden_dim": 512,
+          "emb_num_layers": 3,
+          "df_hidden_dim": 576,
+          "df_num_layers": 2,
+          "mask_pf": true,
+          "grnn_backend": "torch"
+        },
+        "stft": {
+          "sr": 16000,
+          "fft_size": 320,
+          "hop_length": 160,
+          "nb_erb": 24,
+          "nb_df": 96,
+          "norm_tau": 1,
+          "lsnr_max": 35,
+          "lsnr_min": -15,
+          "min_nb_freqs": 1,
+          "df_order": 5,
+          "df_lookahead": 1,
+          "pad_mode": "input"
+        }
+      }
+    },
+    {
+      "id": "rebalanced2",
+      "label": "Rebalanced-2",
+      "epoch": 50,
+      "parameters": 1092507,
+      "run_name": "grnn_rebalanced2_full_50e_eval5_20261015",
+      "weights_url": "models/rebalanced_2.pth",
+      "weights_sha256": "2b66223c4f44af84c839de8788d2188fe31ecb0bedee63f5a09a47b827165db1",
+      "source_checkpoint_sha256": "dccf46600263aa14b8d448ccb390871d5dce1b34b446ca8dc523f432f87b1c58",
+      "inference_config": {
+        "model": {
+          "_target_": "src.model.DfNetGRNN",
+          "conv_ch": 40,
+          "emb_hidden_dim": 512,
+          "emb_num_layers": 3,
+          "df_hidden_dim": 640,
+          "df_num_layers": 2,
+          "mask_pf": true,
+          "grnn_backend": "torch"
+        },
+        "stft": {
+          "sr": 16000,
+          "fft_size": 320,
+          "hop_length": 160,
+          "nb_erb": 24,
+          "nb_df": 96,
+          "norm_tau": 1,
+          "lsnr_max": 35,
+          "lsnr_min": -15,
+          "min_nb_freqs": 1,
+          "df_order": 5,
+          "df_lookahead": 1,
+          "pad_mode": "input"
+        }
+      }
+    },
+    {
+      "id": "rebalanced3",
+      "label": "Rebalanced-3",
+      "epoch": 50,
+      "parameters": 1156151,
+      "run_name": "grnn_rebalanced3_full_50e_eval5_20261015",
+      "weights_url": "models/rebalanced_3.pth",
+      "weights_sha256": "bff3aaeefe5042694457c8fdaf48d2f907c20d242085d75044d18817668b6c1d",
+      "source_checkpoint_sha256": "8fc80a67f69f5c138f2d89023c7193136513a3f0cc8ac4ed9f2faee2a20e80ba",
+      "inference_config": {
+        "model": {
+          "_target_": "src.model.DfNetGRNN",
+          "conv_ch": 32,
+          "emb_hidden_dim": 512,
+          "emb_num_layers": 3,
+          "df_hidden_dim": 704,
+          "df_num_layers": 2,
+          "mask_pf": true,
+          "grnn_backend": "torch"
+        },
+        "stft": {
+          "sr": 16000,
+          "fft_size": 320,
+          "hop_length": 160,
+          "nb_erb": 24,
+          "nb_df": 96,
+          "norm_tau": 1,
+          "lsnr_max": 35,
+          "lsnr_min": -15,
+          "min_nb_freqs": 1,
+          "df_order": 5,
+          "df_lookahead": 1,
+          "pad_mode": "input"
+        }
+      }
+    }
+  ],
+  "samples": [
+    {
+      "id": "sample1",
+      "label": "Sample 1",
+      "samples": 99946,
+      "duration_seconds": 6.246625,
+      "spectrogram_reference_magnitude": 53.41651916503906,
+      "variants": {
+        "noisy": {
+          "audio": "audio/noisy/sample1.wav",
+          "image": "images/noisy/sample1.png",
+          "audio_sha256": "2b4bc95df4cd046a05ae5fe558d5c4936a65f2c1eb1db59307c8b861b9810228",
+          "image_sha256": "701187b1c40afe20c06558435a656b6e6ae1291ed27de1f8e3a93580d8aca6d7"
+        },
+        "clean": {
+          "audio": "audio/clean/sample1.wav",
+          "image": "images/clean/sample1.png",
+          "audio_sha256": "3980eba2b8874bcf89741549703c5fdbbff12436dc20f178233425c75caeb797",
+          "image_sha256": "5679b5ac4be1f9ea1a579e03bc93fdd7a0e693bf60528d6234519ad6c29e0e54"
+        },
+        "dfnet": {
+          "audio": "audio/enhanced/dfnet/sample1.wav",
+          "image": "images/enhanced/dfnet/sample1.png",
+          "audio_sha256": "c6524718204a3e15c5697d50dff1830e2e1a72d87031b1b4f41e497cddd5c1fb",
+          "image_sha256": "3ab45e5f7ec2303aa6a02fd0b60107fa17cc5592a17e5a680fe7d3efff1d0f67"
+        },
+        "grnn": {
+          "audio": "audio/enhanced/grnn/sample1.wav",
+          "image": "images/enhanced/grnn/sample1.png",
+          "audio_sha256": "67f27f56f5d0496acc963089cc1df5808e8071700b6220872687b8ccf130635f",
+          "image_sha256": "8168d664801497c52147ec391079a7362278f1c395f4cac392846891af2740d5"
+        },
+        "grnn_emb_256": {
+          "audio": "audio/enhanced/grnn_emb_256/sample1.wav",
+          "image": "images/enhanced/grnn_emb_256/sample1.png",
+          "audio_sha256": "0abc192cd18bbc3e24c029aa8624a96f550d224c79c5ef075530fb6ff432f84d",
+          "image_sha256": "7d26b525ef36f76955b27d48ef7c9d8786af44098665f2615a70168f0cdca05c"
+        },
+        "grnn_emb_128": {
+          "audio": "audio/enhanced/grnn_emb_128/sample1.wav",
+          "image": "images/enhanced/grnn_emb_128/sample1.png",
+          "audio_sha256": "edfd0a06790bb6e0fbc9f8bad73318616b1f459b334ad4a645edc3dd92b6bfb3",
+          "image_sha256": "d0a223eff5cdf1dbc8b43253592940b1ec10d31b8232dcf97c4ca4495ec71141"
+        },
+        "rebalanced": {
+          "audio": "audio/enhanced/rebalanced/sample1.wav",
+          "image": "images/enhanced/rebalanced/sample1.png",
+          "audio_sha256": "8ed8df8308837fe1b419f88738dc1c11337bc279f0e91bc136759d39a77296ad",
+          "image_sha256": "6bfc895f3d898cb65161cea84fa51a41552f2911ea926fb320b442a2ff8bf598"
+        },
+        "rebalanced2": {
+          "audio": "audio/enhanced/rebalanced2/sample1.wav",
+          "image": "images/enhanced/rebalanced2/sample1.png",
+          "audio_sha256": "dcf907b79da64b562dcfcdddb1f33a21556e5caab8e4d6f5883cdfd0923a6b25",
+          "image_sha256": "ae538d0969ce174b58a6f0660dc1cc8d7557ebd763a88689ae088ff1a183401b"
+        },
+        "rebalanced3": {
+          "audio": "audio/enhanced/rebalanced3/sample1.wav",
+          "image": "images/enhanced/rebalanced3/sample1.png",
+          "audio_sha256": "a6116d15ede9ab47121e3df9443d2d3075e9773aa3200ea976452d9cf760112d",
+          "image_sha256": "84ca7027415045f68626f9a18af3988bb331ccd941679fd18ea590f826e02ea5"
+        }
+      }
+    },
+    {
+      "id": "sample2",
+      "label": "Sample 2",
+      "samples": 39809,
+      "duration_seconds": 2.4880625,
+      "spectrogram_reference_magnitude": 24.784744262695312,
+      "variants": {
+        "noisy": {
+          "audio": "audio/noisy/sample2.wav",
+          "image": "images/noisy/sample2.png",
+          "audio_sha256": "761713c90f2842444dfc3ffcf01535068e2eb9440eacca4c8bdb8f3cd646045d",
+          "image_sha256": "b0b90f53b4941cc3999f29974801c7289dd425c48ce1c983c04352ea9ad362b4"
+        },
+        "clean": {
+          "audio": "audio/clean/sample2.wav",
+          "image": "images/clean/sample2.png",
+          "audio_sha256": "117746c6b6b17a79539d6a060db5fda4c63f37e90b421aa0f22a84b21930e77a",
+          "image_sha256": "465da33d096af4dd6601d343884102836f2914ebe70399e44cb6c653c6b8827a"
+        },
+        "dfnet": {
+          "audio": "audio/enhanced/dfnet/sample2.wav",
+          "image": "images/enhanced/dfnet/sample2.png",
+          "audio_sha256": "935f8d2b81f1df536ec527011d86c2e02d73d201f4c81616a35c5490ddcf22ea",
+          "image_sha256": "214ade86c8d5fb4a6b545cb201d06cd2e87a681a71cab0498b9bf5d2f5a14065"
+        },
+        "grnn": {
+          "audio": "audio/enhanced/grnn/sample2.wav",
+          "image": "images/enhanced/grnn/sample2.png",
+          "audio_sha256": "6450c44ef67a3d37349c6252796defc790e41c7471c850d9eb14b576c5c1b0bc",
+          "image_sha256": "e90d8a361955445bcaef7adec673b8dc71c418c5b6e3d4066100bd673b69dcf3"
+        },
+        "grnn_emb_256": {
+          "audio": "audio/enhanced/grnn_emb_256/sample2.wav",
+          "image": "images/enhanced/grnn_emb_256/sample2.png",
+          "audio_sha256": "d90b434290334c1eab48407fb34fe43c5067cdc838ed011d342c7916915253ba",
+          "image_sha256": "cda42a2739612e251c6555af83d474ac6c91de5f06eb6bc353d0c486d66b6dbc"
+        },
+        "grnn_emb_128": {
+          "audio": "audio/enhanced/grnn_emb_128/sample2.wav",
+          "image": "images/enhanced/grnn_emb_128/sample2.png",
+          "audio_sha256": "f5e37e4ae413c816e28b8fd619b259a7c77154b67ab45cca703b976dbb6a7bdb",
+          "image_sha256": "53d3624e6de7f89fae5d0f9fa8e1e3e711a1542b182728ea50aebc7ba6c8bc4c"
+        },
+        "rebalanced": {
+          "audio": "audio/enhanced/rebalanced/sample2.wav",
+          "image": "images/enhanced/rebalanced/sample2.png",
+          "audio_sha256": "3b434ae67d5d36c9335159f1c3ac5560c4eeb856393b5cfdca80b3bbfecf2552",
+          "image_sha256": "f1e2cb8a827b00885ab3d77a4e951d3596fb24f0428f376c364d5cb79050c3d0"
+        },
+        "rebalanced2": {
+          "audio": "audio/enhanced/rebalanced2/sample2.wav",
+          "image": "images/enhanced/rebalanced2/sample2.png",
+          "audio_sha256": "b0bec580db22a882e70473320adf77f1d7657eb123920f86fe8513d1cf801204",
+          "image_sha256": "620bca1a950f733ac5f6d7ba9e276446367cac8eda1424322b977fd9c233d761"
+        },
+        "rebalanced3": {
+          "audio": "audio/enhanced/rebalanced3/sample2.wav",
+          "image": "images/enhanced/rebalanced3/sample2.png",
+          "audio_sha256": "e0ef23029b7eb9f30578303bb2e2609a1063e069b03bdfa4dedf735042b32546",
+          "image_sha256": "7bc676222cfeb3eb21c5cf1e8c7edaee80005a26b34d106310a69fefe166db1a"
+        }
+      }
+    },
+    {
+      "id": "sample3",
+      "label": "Sample 3",
+      "samples": 36414,
+      "duration_seconds": 2.275875,
+      "spectrogram_reference_magnitude": 32.22731018066406,
+      "variants": {
+        "noisy": {
+          "audio": "audio/noisy/sample3.wav",
+          "image": "images/noisy/sample3.png",
+          "audio_sha256": "9442dba86fd910421d36d1bca7d2fb8e13568e5a7e117fdd84b6c3be4a0e217d",
+          "image_sha256": "802bc88c2abb16d53be9e836f6d5f6ab4c3da800c8db01a6bd0a8286736ff7b6"
+        },
+        "clean": {
+          "audio": "audio/clean/sample3.wav",
+          "image": "images/clean/sample3.png",
+          "audio_sha256": "ae51bd44214c4a5b592aa3e104a52c32242921d8a2309735ecf44a3399059081",
+          "image_sha256": "d81e24925337bb01bbd99962c95f648d5d4c5f2570ef9d086854f85d1eb84b76"
+        },
+        "dfnet": {
+          "audio": "audio/enhanced/dfnet/sample3.wav",
+          "image": "images/enhanced/dfnet/sample3.png",
+          "audio_sha256": "0e33bb4dde59358ee31a84c5bb9a2b0f04105c233bf8b2e01ced754a6c643e79",
+          "image_sha256": "98c638f1428ad4fa1fe31fbabb464a6a61a44f6fc3378fda684c1668c9773f1c"
+        },
+        "grnn": {
+          "audio": "audio/enhanced/grnn/sample3.wav",
+          "image": "images/enhanced/grnn/sample3.png",
+          "audio_sha256": "2c09b3875c4d9ddf8ed8edaeb8168236ccdc937127a0a0a9138f1e6e997c52c3",
+          "image_sha256": "5ce5dc67421d957ef0f00f1a4d3de0e28583b1643b4a2e41782481eb62f9fe9e"
+        },
+        "grnn_emb_256": {
+          "audio": "audio/enhanced/grnn_emb_256/sample3.wav",
+          "image": "images/enhanced/grnn_emb_256/sample3.png",
+          "audio_sha256": "a6b0ff1c6cb8f58c4647921268e96ae96771f280aebdc21565f05483ca102af7",
+          "image_sha256": "78fb49a4ff873ce139f544c5a36010f078fe4bd269ca0563237b8a2960d577ff"
+        },
+        "grnn_emb_128": {
+          "audio": "audio/enhanced/grnn_emb_128/sample3.wav",
+          "image": "images/enhanced/grnn_emb_128/sample3.png",
+          "audio_sha256": "2f6e342401d41045f21ea0dddd6e5943bf4f6eff2315ed5003ebae22e353433a",
+          "image_sha256": "9eb48139eb22a00912d0a76c95b12b9cb11d3b7d8520673ec17c91ab02fafba9"
+        },
+        "rebalanced": {
+          "audio": "audio/enhanced/rebalanced/sample3.wav",
+          "image": "images/enhanced/rebalanced/sample3.png",
+          "audio_sha256": "22c6665a014fc5697cd0de4ce65d23c2a42f358d69278bc3fa897cb98d6cf390",
+          "image_sha256": "12fb7910442515af7edf6951c60a2d3b7dc7abe2092035bf487bba6bd8ed9cc1"
+        },
+        "rebalanced2": {
+          "audio": "audio/enhanced/rebalanced2/sample3.wav",
+          "image": "images/enhanced/rebalanced2/sample3.png",
+          "audio_sha256": "9d1fd1970a5e61803230c4b9fe76c7667b98c504a37bbf7bd6518810ee33e344",
+          "image_sha256": "76e9637b927a9ff267bfe8043fab1fe18b5c47ddc3b655e57686a757f5984930"
+        },
+        "rebalanced3": {
+          "audio": "audio/enhanced/rebalanced3/sample3.wav",
+          "image": "images/enhanced/rebalanced3/sample3.png",
+          "audio_sha256": "95d9927306d337a925991daeeeb43c22f22d870bdf2aa561a34bd6630283fec9",
+          "image_sha256": "9ea96c0c3f7b35c679c8189bc7a90b96517e47e1f608436128f891d11e3c1de2"
+        }
+      }
+    }
+  ]
+}

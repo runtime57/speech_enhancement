@@ -3,226 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Speech Enhancement Demo</title>
-  <link rel="stylesheet" href="styles.css" />
+  <title>DFNet and FastGRNN — Speech Enhancement Demo</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="styles.css?v=20261015" />
+  <script src="app.js?v=20261015" defer></script>
 </head>
 <body>
-  <div class="page">
+  <main class="page">
     <header class="hero">
       <h1>Speech Enhancement Demo</h1>
-      <p>Compare noisy, clean, and enhanced outputs across multiple models.</p>
+      <p>DFNet, FastGRNN with emb 128 / 256 / 512, and three Rebalanced models.</p>
+      <p class="protocol">All models: epoch 50 · mono 16 kHz · FP32 inference</p>
+      <p class="protocol">Switch models at the same playback position. Spectrograms share an 80 dB scale within each example.</p>
+      <a href="https://github.com/runtime57/speech_enhancement/blob/main/paper/results/cpu_benchmark_20261015.md">Full evaluation and CPU results</a>
     </header>
-
-    <section class="samples">
-
-      <div class="sample-card" data-sample="sample1">
-        <div class="sample-header">
-          <h2>Sample 1</h2>
-          <span class="sample-badge">Speech Example</span>
-        </div>
-
-        <div class="spectrogram-wrap">
-          <img class="spectrogram" src="images/noisy/sample1.png" alt="Spectrogram for sample1" />
-        </div>
-
-        <div class="buttons">
-          <button class="variant-btn active" data-variant="noisy">noisy</button>
-          <button class="variant-btn" data-variant="clean">clean</button>
-          <button class="variant-btn" data-variant="dfnet">dfnet</button>
-          <button class="variant-btn" data-variant="grnn">grnn</button>
-          <button class="variant-btn" data-variant="rebalanced">rebalanced-1</button>
-          <button class="variant-btn" data-variant="xdws">xdws+grnn</button>
-        </div>
-
-        <div class="player-shell">
-          <audio class="audio-element" src="audio/noisy/sample1.wav"></audio>
-
-          <button class="play-btn" type="button" aria-label="Play audio">▶</button>
-
-          <div class="progress-area">
-            <input class="progress" type="range" min="0" max="100" value="0" step="0.1" />
-            <div class="time-row">
-              <span class="current-time">0:00</span>
-              <span class="duration">0:00</span>
-            </div>
-          </div>
+    <p id="load-status" role="status">Loading examples…</p>
+    <section class="samples" aria-label="Listening examples"></section>
+    <footer>Original listening examples, reprocessed with the current models.
+      <a href="demo_manifest.json">Model and audio provenance</a> ·
+      <a href="https://github.com/runtime57/speech_enhancement/tree/demo">Source and weights</a>
+    </footer>
+  </main>
+  <template id="sample-template">
+    <article class="sample-card">
+      <div class="sample-header">
+        <h2></h2><span class="sample-badge">Speech example</span>
+      </div>
+      <div class="spectrogram-wrap">
+        <img class="spectrogram" loading="lazy" alt="" width="1800" height="525" />
+      </div>
+      <div class="buttons" role="group" aria-label="Audio variant"></div>
+      <p class="model-info"></p>
+      <div class="player-shell">
+        <audio class="audio-element" preload="metadata"></audio>
+        <button class="play-btn" type="button" aria-label="Play audio">▶</button>
+        <div class="progress-area">
+          <input class="progress" aria-label="Playback position" type="range" min="0" max="100" value="0" step="0.1" />
+          <div class="time-row"><span class="current-time">0:00</span><span class="duration">0:00</span></div>
         </div>
       </div>
-
-      <div class="sample-card" data-sample="sample2">
-        <div class="sample-header">
-          <h2>Sample 2</h2>
-          <span class="sample-badge">Speech Example</span>
-        </div>
-
-        <div class="spectrogram-wrap">
-          <img class="spectrogram" src="images/noisy/sample2.png" alt="Spectrogram for sample2" />
-        </div>
-
-        <div class="buttons">
-          <button class="variant-btn active" data-variant="noisy">noisy</button>
-          <button class="variant-btn" data-variant="clean">clean</button>
-          <button class="variant-btn" data-variant="dfnet">dfnet</button>
-          <button class="variant-btn" data-variant="grnn">grnn</button>
-          <button class="variant-btn" data-variant="rebalanced">rebalanced-1</button>
-          <button class="variant-btn" data-variant="xdws">xdws+grnn</button>
-        </div>
-
-        <div class="player-shell">
-          <audio class="audio-element" src="audio/noisy/sample2.wav"></audio>
-
-          <button class="play-btn" type="button" aria-label="Play audio">▶</button>
-
-          <div class="progress-area">
-            <input class="progress" type="range" min="0" max="100" value="0" step="0.1" />
-            <div class="time-row">
-              <span class="current-time">0:00</span>
-              <span class="duration">0:00</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="sample-card" data-sample="sample3">
-        <div class="sample-header">
-          <h2>Sample 3</h2>
-          <span class="sample-badge">Speech Example</span>
-        </div>
-
-        <div class="spectrogram-wrap">
-          <img class="spectrogram" src="images/noisy/sample3.png" alt="Spectrogram for sample3" />
-        </div>
-
-        <div class="buttons">
-          <button class="variant-btn active" data-variant="noisy">noisy</button>
-          <button class="variant-btn" data-variant="clean">clean</button>
-          <button class="variant-btn" data-variant="dfnet">dfnet</button>
-          <button class="variant-btn" data-variant="grnn">grnn</button>
-          <button class="variant-btn" data-variant="rebalanced">rebalanced-1</button>
-          <button class="variant-btn" data-variant="xdws">xdws+grnn</button>
-        </div>
-
-        <div class="player-shell">
-          <audio class="audio-element" src="audio/noisy/sample3.wav"></audio>
-
-          <button class="play-btn" type="button" aria-label="Play audio">▶</button>
-
-          <div class="progress-area">
-            <input class="progress" type="range" min="0" max="100" value="0" step="0.1" />
-            <div class="time-row">
-              <span class="current-time">0:00</span>
-              <span class="duration">0:00</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </section>
-  </div>
-
-  <script>
-    function getPaths(sample, variant) {
-      if (variant === "noisy") {
-        return {
-          audio: `audio/noisy/${sample}.wav`,
-          image: `images/noisy/${sample}.png`
-        };
-      }
-
-      if (variant === "clean") {
-        return {
-          audio: `audio/clean/${sample}.wav`,
-          image: `images/clean/${sample}.png`
-        };
-      }
-
-      return {
-        audio: `audio/enhanced/${variant}/${sample}.wav`,
-        image: `images/enhanced/${variant}/${sample}.png`
-      };
-    }
-
-    function formatTime(seconds) {
-      if (!isFinite(seconds)) return "0:00";
-      const mins = Math.floor(seconds / 60);
-      const secs = Math.floor(seconds % 60).toString().padStart(2, "0");
-      return `${mins}:${secs}`;
-    }
-
-    const cards = document.querySelectorAll(".sample-card");
-
-    cards.forEach((card) => {
-      const sample = card.dataset.sample;
-      const spectrogram = card.querySelector(".spectrogram");
-      const buttons = card.querySelectorAll(".variant-btn");
-
-      const audio = card.querySelector(".audio-element");
-      const playBtn = card.querySelector(".play-btn");
-      const progress = card.querySelector(".progress");
-      const currentTimeEl = card.querySelector(".current-time");
-      const durationEl = card.querySelector(".duration");
-
-      let currentVariant = "noisy";
-
-      buttons.forEach((button) => {
-        button.addEventListener("click", () => {
-          buttons.forEach((btn) => btn.classList.remove("active"));
-          button.classList.add("active");
-
-          currentVariant = button.dataset.variant;
-          const paths = getPaths(sample, currentVariant);
-
-          const wasPlaying = !audio.paused;
-
-          audio.src = paths.audio;
-          spectrogram.src = paths.image;
-
-          progress.value = 0;
-          currentTimeEl.textContent = "0:00";
-          durationEl.textContent = "0:00";
-          playBtn.textContent = "▶";
-
-          audio.load();
-
-          if (wasPlaying) {
-            audio.play();
-            playBtn.textContent = "❚❚";
-          }
-        });
-      });
-
-      playBtn.addEventListener("click", () => {
-        if (audio.paused) {
-          audio.play();
-          playBtn.textContent = "❚❚";
-        } else {
-          audio.pause();
-          playBtn.textContent = "▶";
-        }
-      });
-
-      audio.addEventListener("loadedmetadata", () => {
-        durationEl.textContent = formatTime(audio.duration);
-      });
-
-      audio.addEventListener("timeupdate", () => {
-        if (audio.duration) {
-          progress.value = (audio.currentTime / audio.duration) * 100;
-        }
-        currentTimeEl.textContent = formatTime(audio.currentTime);
-      });
-
-      audio.addEventListener("ended", () => {
-        playBtn.textContent = "▶";
-        progress.value = 0;
-      });
-
-      progress.addEventListener("input", () => {
-        if (audio.duration) {
-          audio.currentTime = (progress.value / 100) * audio.duration;
-        }
-      });
-    });
-  </script>
+      <p class="player-status" role="status"></p>
+    </article>
+  </template>
 </body>
 </html>
