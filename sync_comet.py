@@ -318,6 +318,8 @@ def main():
         if not state.get("url"):
             experiment_key = state["experiment_key"]
             metadata = client.request("GET", "experiment/metadata", {"experimentKey": experiment_key})
+            if metadata.get("archived"):
+                client.request("GET", "write/experiment/restore", {"experimentKey": experiment_key})
             state["url"] = f"https://www.comet.com/{metadata['workspaceName']}/{metadata['projectName']}/{experiment_key}"
             save_state(state_path, state)
             client.request("POST", "write/experiment/log-other", {

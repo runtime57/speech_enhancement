@@ -194,7 +194,26 @@ excluding optimizer steps, audio preprocessing, data loading and metrics.
 [`benchmarks/grnn_cpu_fp32.json`](benchmarks/grnn_cpu_fp32.json) records hardware,
 thread settings and timings for batches 1/32 and sequence lengths 200/400.
 
-## Results on VCTK+DEMAND dataset
+## CPU inference and reproducible paper tables
+
+The [CPU benchmark report](paper/results/cpu_benchmark_20261015.md) contains
+waveform-to-waveform latency (median/p95), RTF, throughput, parameter counts,
+FP32 model state sizes and neural MAC estimates for 13 architectures on an
+AMD Ryzen 7 7700X. It records single-thread and four-thread results for 1 s
+and 5 s inputs, raw observations, clip identities, confidence intervals and
+the exact timing scope. The report also includes quality at a common
+50-epoch budget, a Noisy baseline, learning curves and size/speed–quality plots.
+Rows whose training has not yet finished are marked explicitly.
+
+Run `python benchmark_cpu.py` and `python paper_results.py` to reproduce the
+measurements and render the report. See its protocol for hardware affinity,
+dataset/checkpoint requirements and the distinction between whole-utterance
+processing time and streaming latency.
+
+## Historical results on VCTK+DEMAND dataset
+
+The following table reproduces the original paper results. Updated measurements
+with the full-recording protocol and a common 50-epoch budget are linked above.
 
 
 | Model           | Params (M) | MACs (G) | PESQ    | STOI    | SI-SDR   |

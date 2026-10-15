@@ -17,7 +17,7 @@ from omegaconf import OmegaConf
 import torch
 
 from src.utils.config_utils import setup_config
-from src.utils.training_suite import REPORT_MODELS
+from src.utils.training_suite import MODELS, REPORT_MODELS
 from sync_comet import save_state
 from train_suite import environment, snapshot, wait_for_game
 
@@ -59,12 +59,19 @@ def wait_for_running_runs(manifest, path):
     return adopted
 
 
-def run_preflight(command, log_path, attempts=3):
+def run_environment(entry):
+    env = environment()
+    if entry.get("cuda_launch_blocking"):
+        env["CUDA_LAUNCH_BLOCKING"] = "1"
+    return env
+
+
+def run_preflight(command, log_path, attempts=3, env=None):
     """Retry a temporary unavailable CUDA device, preserving every failed attempt."""
     for attempt in range(1, attempts + 1):
         start = log_path.stat().st_size if log_path.exists() else 0
         with log_path.open("a") as log:
-            result = subprocess.run(command, cwd=ROOT, env=environment(), stdout=log,
+            result = subprocess.run(command, cwd=ROOT, env=env or environment(), stdout=log,
                                     stderr=subprocess.STDOUT)
         if result.returncode == 0:
             return
@@ -77,7 +84,9 @@ def run_preflight(command, log_path, attempts=3):
         time.sleep(15 * attempt)
 
 
-def make_manifest(after=None):
+def make_manifest(after=None, prepend_models=None):
+    extra = [(name, dict(MODELS + REPORT_MODELS)[name]) for name in (prepend_models or [])]
+    models = extra + [(name, config) for name, config in REPORT_MODELS if name not in dict(extra)]
     return {"created_at_utc": timestamp(), "status": "queued", "after": after,
             "protocol": {"epochs": 50, "evaluation_period": 5, "batch_size": 32,
                          "full_recordings": True, "train_samples": 10802,
@@ -85,7 +94,7 @@ def make_manifest(after=None):
                          "drop_last": False},
             "runs": [{"name": name, "model_config": config, "status": "pending",
                       "run_name": f"{name}_full_50e_eval5_20261015"}
-                     for name, config in REPORT_MODELS]}
+                     for name, config in models]}
 
 
 def records(run_dir):
@@ -175,6 +184,8 @@ def main():
     parser.add_argument("--after-pid", type=int)
     parser.add_argument("--after-run", default="grnn_emb_256_full_20261014")
     parser.add_argument("--prepare", action="store_true")
+    parser.add_argument("--prepend-models", nargs="*", default=[],
+                        choices=sorted(dict(MODELS + REPORT_MODELS)))
     args = parser.parse_args()
     directory = args.queue_dir.resolve()
     directory.mkdir(parents=True, exist_ok=True)
@@ -183,12 +194,18 @@ def main():
     path = directory / "manifest.json"
     if path.exists():
         manifest = json.loads(path.read_text())
-        assert [(r["name"], r["model_config"]) for r in manifest["runs"]] == REPORT_MODELS
+        expected = make_manifest(prepend_models=args.prepend_models)
+        expected_names = {r["name"]: r["model_config"] for r in expected["runs"]}
+        assert len(expected_names) == len(expected["runs"]), "Duplicate selected model"
+        assert all(expected_names.get(r["name"]) == r["model_config"] for r in manifest["runs"])
+        existing = {r["name"]: r for r in manifest["runs"]}
+        manifest["runs"] = [existing.get(r["name"], r) for r in expected["runs"]]
         assert manifest["protocol"] == make_manifest()["protocol"]
+        save_state(path, manifest)
     else:
         prior = process_identity(args.after_pid, args.after_run) if args.after_pid else None
         after = {"identity": prior, "run_name": args.after_run} if prior else None
-        manifest = make_manifest(after)
+        manifest = make_manifest(after, args.prepend_models)
         save_state(path, manifest)
     if args.prepare:
         print(f"Prepared {len(manifest['runs'])} jobs: 50 epochs, evaluation every 5", flush=True)
@@ -200,6 +217,7 @@ def main():
         save_state(path, manifest)
         time.sleep(15)
     manifest.update(status="running", updated_at_utc=timestamp())
+    manifest.pop("finished_at_utc", None)
     save_state(path, manifest)
     for entry in wait_for_running_runs(manifest, path):
         output = directory / entry["name"]
@@ -238,7 +256,7 @@ def main():
                     command = [sys.executable, "-u", "preflight_suite.py", "--config", "report_queue",
                                "--model", entry["model_config"], "--output", str(output / "preflight.json"),
                                "--override", "++model.mask_pf=true", "--override", "++model.grnn_backend=triton"]
-                    run_preflight(command, output / "preflight.log")
+                    run_preflight(command, output / "preflight.log", env=run_environment(entry))
                 resume = resume_checkpoint(run_dir) if run_dir.exists() else None
                 if run_dir.exists() and resume is None:
                     archive = run_dir.with_name(run_dir.name + "_interrupted_init_" + str(int(time.time())))
@@ -246,7 +264,7 @@ def main():
                 command = training_command(entry, resume)
                 entry.update(status="training", command=command, started_at_utc=timestamp())
                 with (output / "train.log").open("a") as log:
-                    train = subprocess.Popen(command, cwd=ROOT, env=environment(), stdout=log,
+                    train = subprocess.Popen(command, cwd=ROOT, env=run_environment(entry), stdout=log,
                                              stderr=subprocess.STDOUT, start_new_session=True)
                 identity = None
                 for _ in range(100):
