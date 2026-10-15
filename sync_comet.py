@@ -82,7 +82,8 @@ class CometRestClient:
             with selectors.DefaultSelector() as selector:
                 selector.register(self.worker.stdout, selectors.EVENT_READ)
                 packet_timeout = max((packet.get("timeout", self.timeout) for packet in packets), default=self.timeout)
-                if not selector.select(packet_timeout * math.ceil(len(packets) / 4) + 5):
+                # requests timeouts apply separately to connect/read and redirected asset downloads.
+                if not selector.select(4 * packet_timeout * math.ceil(len(packets) / 4) + 5):
                     self.worker.terminate()
                     raise TimeoutError("Windows Comet transport timed out")
             responses = json.loads(self.worker.stdout.readline())

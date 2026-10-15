@@ -210,6 +210,12 @@ measurements and render the report. See its protocol for hardware affinity,
 dataset/checkpoint requirements and the distinction between whole-utterance
 processing time and streaming latency.
 
+`python export_paper_results.py` uploads verified epoch-50 inference weights,
+quality summaries and matching CPU results into the existing Comet experiments.
+`python paper_refresh.py` refreshes changed checkpoint measurements and publishes
+only generated paper artifacts through an isolated Git worktree. A repeated call
+does nothing when no additional model has completed epoch 50.
+
 ## Historical results on VCTK+DEMAND dataset
 
 The following table reproduces the original paper results. Updated measurements

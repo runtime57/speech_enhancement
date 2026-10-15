@@ -1,6 +1,7 @@
 """Publish epoch-50 quality, lean inference weights and measured CPU results to Comet."""
 
 import hashlib
+import fcntl
 import json
 from pathlib import Path
 
@@ -26,6 +27,8 @@ def main():
     torch.set_num_threads(1)
     root = ROOT / "outputs/paper_exports"
     root.mkdir(exist_ok=True)
+    lock = (root / "artifacts.lock").open("w")
+    fcntl.flock(lock, fcntl.LOCK_EX)
     benchmark = json.loads((ROOT / "benchmarks/cpu_speech_enhancement_20261015.json").read_text())
     client = CometRestClient((ROOT / ".comet_key").read_text().strip(), "windows", timeout=20)
     try:
@@ -96,6 +99,7 @@ def main():
             print("Published paper results:", entry[0], flush=True)
     finally:
         client.close()
+        lock.close()
 
 
 if __name__ == "__main__":
