@@ -59,7 +59,7 @@ function renderSample(sample, models) {
       : (variant.id === "noisy" ? "Original noisy recording" : "Clean reference recording");
     if (variant.weights_url) {
       const link = document.createElement("a");
-      link.href = variant.weights_url;
+      link.href = `${variant.weights_url}?v=${variant.weights_sha256.slice(0, 12)}`;
       link.textContent = "Download weights";
       link.setAttribute("download", "");
       info.append(link);
